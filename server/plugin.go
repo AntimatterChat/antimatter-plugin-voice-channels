@@ -27,6 +27,11 @@ type Plugin struct {
 	store  *Store
 	calls  *CallsClient
 	router *mux.Router
+
+	// syncLock guards syncTrigger and syncStop, set while the plugin is active.
+	syncLock    sync.Mutex
+	syncTrigger chan struct{}
+	syncStop    chan struct{}
 }
 
 // OnActivate is invoked when the plugin is activated.
@@ -39,6 +44,24 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrap(err, "failed to register the /voice command")
 	}
 
+	p.syncLock.Lock()
+	p.syncTrigger = make(chan struct{}, 1)
+	p.syncStop = make(chan struct{})
+	go p.runCallsSync(p.syncTrigger, p.syncStop)
+	p.syncLock.Unlock()
+
+	return nil
+}
+
+// OnDeactivate is invoked when the plugin is deactivated.
+func (p *Plugin) OnDeactivate() error {
+	p.syncLock.Lock()
+	defer p.syncLock.Unlock()
+	if p.syncStop != nil {
+		close(p.syncStop)
+		p.syncStop = nil
+		p.syncTrigger = nil
+	}
 	return nil
 }
 

@@ -83,7 +83,13 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
+	previous := p.getConfiguration()
 	p.setConfiguration(configuration)
+
+	// Voice channels allow video through their calls settings
+	if previous.AllowVideo != configuration.AllowVideo {
+		p.triggerCallsSync()
+	}
 
 	return nil
 }
