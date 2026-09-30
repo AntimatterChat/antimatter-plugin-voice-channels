@@ -7,6 +7,8 @@ import type {AnyAction, Reducer, Store} from 'redux';
 import type {Channel} from '@mattermost/types/channels';
 import type {GlobalState} from '@mattermost/types/store';
 
+import type {WebUI} from '../web_ui';
+
 import type CallsClient from './calls_client';
 
 export type ChannelMatcher = (state: GlobalState, channel: Channel) => boolean;
@@ -107,6 +109,9 @@ declare global {
 
         // Set by the Calls plugin while this window is in a call
         callsClient?: CallsClient;
+
+        // Set by the Antimatter web UIs before plugins load
+        antimatterWebUI?: WebUI;
 
         WebappUtils?: {
             browserHistory: {push: (path: string) => void};
