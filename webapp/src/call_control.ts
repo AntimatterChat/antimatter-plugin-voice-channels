@@ -23,7 +23,8 @@ import type {PluginStore} from './types/host';
 export const LEAVE_TIMEOUT = 5000;
 
 // runCallsCommand runs a /call command through the Calls plugin, which handles both calls run in
-// this window and those run by the desktop app.
+// this window and those run by the desktop app. It's used with Calls versions without an API
+// (window.antimatterCalls).
 function runCallsCommand(message: string, channelId: string, teamId = '') {
     window.postMessage({
         type: 'calls-run-slash-command',
@@ -35,6 +36,10 @@ function runCallsCommand(message: string, channelId: string, teamId = '') {
 export function leaveCall(channelId: string) {
     if (window.callsClient?.channelID === channelId) {
         window.callsClient.disconnect();
+        return;
+    }
+    if (window.antimatterCalls) {
+        window.antimatterCalls.leave();
         return;
     }
     runCallsCommand('/call leave', channelId);
@@ -82,6 +87,16 @@ export async function joinVoiceChannel(store: PluginStore, channelId: string, le
             logError('timed out leaving the previous call', current);
             return false;
         }
+    }
+
+    if (window.antimatterCalls) {
+        try {
+            await window.antimatterCalls.join(channelId);
+        } catch (err) {
+            logError('failed to join the call', err);
+            return false;
+        }
+        return true;
     }
 
     runCallsCommand('/call join', channelId, getChannel(store.getState(), channelId)?.team_id);

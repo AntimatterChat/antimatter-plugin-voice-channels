@@ -9,12 +9,13 @@ import {
     LEAVE_TIMEOUT,
     autoJoinVoiceChannel,
     joinVoiceChannel,
+    leaveCall,
     setDeafened,
     startDeafenController,
     stopDeafenController,
 } from './call_control';
 import * as client from './client';
-import {isSessionDeafened} from './selectors';
+import {getCurrentCallChannelId, getMySessionId, isSessionDeafened} from './selectors';
 import type {CallsPluginState} from './types/calls';
 import type CallsClient from './types/calls_client';
 
@@ -162,6 +163,55 @@ describe('joinVoiceChannel', () => {
         autoJoinVoiceChannel(autoStore, 'voice1');
         await Promise.resolve();
         expect(postMessage).toHaveBeenCalledWith(joinMessage('voice1'), window.origin);
+    });
+});
+
+describe('with the Calls API', () => {
+    let postMessage: jest.SpyInstance;
+    let callsAPI: {version: number; join: jest.Mock; leave: jest.Mock};
+
+    beforeEach(() => {
+        postMessage = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
+        callsAPI = {version: 1, join: jest.fn(() => Promise.resolve()), leave: jest.fn()};
+        window.antimatterCalls = callsAPI;
+    });
+
+    afterEach(() => {
+        postMessage.mockRestore();
+        delete window.antimatterCalls;
+        delete window.callsClient;
+    });
+
+    test('joins through the API', async () => {
+        const store = makeStore(stateWith({}));
+        expect(await joinVoiceChannel(store, 'voice1', false)).toBe(true);
+        expect(callsAPI.join).toHaveBeenCalledWith('voice1');
+        expect(postMessage).not.toHaveBeenCalled();
+    });
+
+    test('reports failed joins', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        callsAPI.join.mockRejectedValue(new Error('calls are disabled'));
+        const store = makeStore(stateWith({}));
+        expect(await joinVoiceChannel(store, 'voice1', false)).toBe(false);
+    });
+
+    test('leaves the call of the desktop app through the API', async () => {
+        const store = makeStore(stateWith({clientStateReducer: {channelID: 'voice1', sessionID: 's'}}));
+        const joining = joinVoiceChannel(store, 'voice2', false);
+        expect(callsAPI.leave).toHaveBeenCalled();
+        store.setState(stateWith({clientStateReducer: null}));
+        expect(await joining).toBe(true);
+        expect(callsAPI.join).toHaveBeenCalledWith('voice2');
+        expect(postMessage).not.toHaveBeenCalled();
+    });
+
+    test('follows the call of this window from the Calls state', () => {
+        const store = makeStore(stateWith({localCall: {channelID: 'voice1', sessionID: 'mysession', state: 'connected'}}));
+        leaveCall('voice1');
+        expect(callsAPI.leave).toHaveBeenCalled();
+        expect(getCurrentCallChannelId(store.getState())).toBe('voice1');
+        expect(getMySessionId(store.getState())).toBe('mysession');
     });
 });
 

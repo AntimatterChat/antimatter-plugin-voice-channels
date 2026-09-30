@@ -21,5 +21,8 @@ export type CallsPluginState = {
     sessions?: {[channelID: string]: {[sessionID: string]: CallsSessionState}};
     screenSharingIDs?: {[channelID: string]: string};
     clientStateReducer?: {channelID: string; sessionID: string} | null;
+
+    // The call run by this window (recent Calls versions)
+    localCall?: {channelID: string; sessionID: string; state: 'connecting' | 'connected'} | null;
     callsConfig?: {EnableVideo?: boolean; AllowScreenSharing?: boolean};
 };

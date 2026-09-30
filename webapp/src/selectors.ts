@@ -57,12 +57,14 @@ export function isActiveVoiceChannel(state: GlobalState, channel: Channel): bool
 // getCurrentCallChannelId returns the channel of the call the user is in (in this window or,
 // with the desktop app, in the call window), or an empty string.
 export function getCurrentCallChannelId(state: GlobalState): string {
-    return window.callsClient?.channelID || callsState(state).clientStateReducer?.channelID || '';
+    const calls = callsState(state);
+    return window.callsClient?.channelID || calls.localCall?.channelID || calls.clientStateReducer?.channelID || '';
 }
 
 // getMySessionId returns the ID of the user's session in the current call, or an empty string.
 export function getMySessionId(state: GlobalState): string {
-    return window.callsClient?.getSessionID() || callsState(state).clientStateReducer?.sessionID || '';
+    const calls = callsState(state);
+    return window.callsClient?.getSessionID() || calls.localCall?.sessionID || calls.clientStateReducer?.sessionID || '';
 }
 
 // isMediaInThisWindow returns whether the current call's media is handled by this window: it

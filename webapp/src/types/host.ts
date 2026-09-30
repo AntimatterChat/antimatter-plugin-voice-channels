@@ -9,6 +9,7 @@ import type {GlobalState} from '@mattermost/types/store';
 
 import type {WebUI} from '../web_ui';
 
+import type {CallsAPI} from './calls_api';
 import type CallsClient from './calls_client';
 
 export type ChannelMatcher = (state: GlobalState, channel: Channel) => boolean;
@@ -109,6 +110,9 @@ declare global {
 
         // Set by the Calls plugin while this window is in a call
         callsClient?: CallsClient;
+
+        // Set by the Calls plugin when it's recent enough
+        antimatterCalls?: CallsAPI;
 
         // Set by the Antimatter web UIs before plugins load
         antimatterWebUI?: WebUI;
