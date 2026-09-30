@@ -1,6 +1,8 @@
 // Copyright (c) 2026-present Antimatter contributors.
 // See LICENSE.txt for license information.
 
+import React from 'react';
+
 import type {Channel} from '@mattermost/types/channels';
 
 import {Client4} from 'mattermost-redux/client';
@@ -14,11 +16,13 @@ import {
     loadVoiceChannel,
     loadVoiceChannels,
 } from './actions';
+import RHSVoicePanel from './components/rhs_voice_panel';
 import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
+import VoicePanel from './components/voice_panel/voice_panel';
 import manifest from './manifest';
 import reducer from './reducer';
-import {isActiveVoiceChannel, isKnownChannel} from './selectors';
+import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
 
 import './styles.css';
@@ -44,6 +48,7 @@ export default class Plugin implements PluginClass {
         registry.registerReducer(reducer);
         this.registerWebSocketEvents(registry, store);
         this.registerSidebar(registry);
+        this.registerChannelView(registry, store);
 
         this.loadWhenLoggedIn(store);
         this.watchCurrentChannel(store);
@@ -80,6 +85,25 @@ export default class Plugin implements PluginClass {
         registry.registerSidebarChannelLinkLabelComponent(makeSidebarChannelLabel(!hasFooter));
 
         registry.registerChannelIconOverride?.((state, channel: Channel) => isActiveVoiceChannel(state, channel), 'volume-high');
+    }
+
+    private registerChannelView(registry: PluginRegistry, store: PluginStore) {
+        if (typeof registry.registerChannelViewPanel === 'function') {
+            registry.registerChannelViewPanel(
+                (state, channel) => isActiveVoiceChannel(state, channel) && isCallsAvailable(state),
+                VoicePanel,
+            );
+            return;
+        }
+
+        // Hosts without channel view panels get the stage in the right-hand sidebar
+        const rhs = registry.registerRightHandSidebarComponent(RHSVoicePanel, 'Voice');
+        registry.registerChannelHeaderButtonAction(
+            <i className='icon icon-volume-high'/>,
+            () => store.dispatch(rhs.toggleRHSPlugin),
+            'Voice',
+            'Voice channel',
+        );
     }
 
     // loadWhenLoggedIn loads the plugin's state once the current user is known.
