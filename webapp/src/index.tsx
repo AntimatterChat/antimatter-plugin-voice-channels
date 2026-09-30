@@ -1,6 +1,8 @@
 // Copyright (c) 2026-present Antimatter contributors.
 // See LICENSE.txt for license information.
 
+import type {Channel} from '@mattermost/types/channels';
+
 import {Client4} from 'mattermost-redux/client';
 import {getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
@@ -12,10 +14,14 @@ import {
     loadVoiceChannel,
     loadVoiceChannels,
 } from './actions';
+import makeSidebarChannelLabel from './components/sidebar_channel_label';
+import SidebarParticipants from './components/sidebar_participants';
 import manifest from './manifest';
 import reducer from './reducer';
-import {isKnownChannel} from './selectors';
+import {isActiveVoiceChannel, isKnownChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
+
+import './styles.css';
 
 // loadAllVoiceChannels loads the voice channels the user is a member of, and whether the current
 // channel is one (it may be a public channel the user isn't a member of).
@@ -37,6 +43,7 @@ export default class Plugin implements PluginClass {
 
         registry.registerReducer(reducer);
         this.registerWebSocketEvents(registry, store);
+        this.registerSidebar(registry);
 
         this.loadWhenLoggedIn(store);
         this.watchCurrentChannel(store);
@@ -64,6 +71,15 @@ export default class Plugin implements PluginClass {
             loadConfig(store);
             loadAllVoiceChannels(store);
         });
+    }
+
+    private registerSidebar(registry: PluginRegistry) {
+        // Hosts without the sidebar channel footer show the participants' avatars next to the name
+        const hasFooter = typeof registry.registerSidebarChannelFooterComponent === 'function';
+        registry.registerSidebarChannelFooterComponent?.(SidebarParticipants);
+        registry.registerSidebarChannelLinkLabelComponent(makeSidebarChannelLabel(!hasFooter));
+
+        registry.registerChannelIconOverride?.((state, channel: Channel) => isActiveVoiceChannel(state, channel), 'volume-high');
     }
 
     // loadWhenLoggedIn loads the plugin's state once the current user is known.
