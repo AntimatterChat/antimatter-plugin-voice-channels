@@ -4,9 +4,12 @@
 import React from 'react';
 
 import type {Channel} from '@mattermost/types/channels';
+import type {GlobalState} from '@mattermost/types/store';
 
 import {Client4} from 'mattermost-redux/client';
+import {Permissions} from 'mattermost-redux/constants';
 import {getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
+import {haveIChannelPermission} from 'mattermost-redux/selectors/entities/roles';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
 import {
@@ -15,18 +18,33 @@ import {
     loadConfig,
     loadVoiceChannel,
     loadVoiceChannels,
+    logError,
+    setVoiceChannel,
 } from './actions';
 import {startDeafenController, stopDeafenController} from './call_control';
+import VoiceChannelPrivacy, {newVoiceChannelPrivacy} from './components/channel_type_option';
 import RHSVoicePanel from './components/rhs_voice_panel';
 import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
 import VoicePanel from './components/voice_panel/voice_panel';
 import manifest from './manifest';
 import reducer from './reducer';
-import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel} from './selectors';
+import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
 
 import './styles.css';
+
+function canManageVoice(state: GlobalState, channel: Channel) {
+    let permission;
+    if (channel.type === 'O') {
+        permission = Permissions.MANAGE_PUBLIC_CHANNEL_PROPERTIES;
+    } else if (channel.type === 'P') {
+        permission = Permissions.MANAGE_PRIVATE_CHANNEL_PROPERTIES;
+    } else {
+        return false;
+    }
+    return channel.delete_at === 0 && haveIChannelPermission(state, channel.team_id, channel.id, permission);
+}
 
 // loadAllVoiceChannels loads the voice channels the user is a member of, and whether the current
 // channel is one (it may be a public channel the user isn't a member of).
@@ -50,6 +68,7 @@ export default class Plugin implements PluginClass {
         this.registerWebSocketEvents(registry, store);
         this.registerSidebar(registry);
         this.registerChannelView(registry, store);
+        this.registerChannelSettings(registry, store);
 
         startDeafenController(store);
         this.unsubscribers.push(stopDeafenController);
@@ -108,6 +127,65 @@ export default class Plugin implements PluginClass {
             'Voice',
             'Voice channel',
         );
+    }
+
+    private registerChannelSettings(registry: PluginRegistry, store: PluginStore) {
+        registry.registerChannelSettingsTab?.({
+            uiName: 'Voice',
+            icon: 'icon-volume-high',
+            shouldRender: canManageVoice,
+            sections: [{
+                title: 'Voice channel',
+                settings: [{
+                    name: 'voice',
+                    type: 'radio',
+                    default: 'off',
+                    helpText: 'A voice channel works like an always-open call: members join and leave its call whenever they want, and can still chat in the channel. Calls must be enabled.',
+                    options: [
+                        {value: 'on', text: 'Voice channel'},
+                        {value: 'off', text: 'Regular channel'},
+                    ],
+                }],
+            }],
+            loadValues: async (channel) => {
+                await loadVoiceChannel(store, channel.id);
+                return {voice: isVoiceChannel(store.getState(), channel.id) ? 'on' : 'off'};
+            },
+            onSave: async (values, channel) => {
+                await setVoiceChannel(store, channel.id, values.voice === 'on');
+            },
+        });
+
+        registry.registerChannelTypeOption?.({
+            label: 'Voice channel',
+            description: 'An always-open call that members can hop in and out of',
+            icon: <i className='icon icon-volume-high'/>,
+            isAvailable: isCallsAvailable,
+            extraContent: VoiceChannelPrivacy,
+            onCreate: async (form) => {
+                let channel: Channel;
+                try {
+                    channel = await Client4.createChannel({
+                        team_id: form.teamId,
+                        name: form.url,
+                        display_name: form.displayName,
+                        purpose: form.purpose,
+                        header: '',
+                        type: newVoiceChannelPrivacy.isPrivate ? 'P' : 'O',
+                    } as Channel);
+                } catch (err) {
+                    return {status: 'error', message: (err as Error).message};
+                }
+
+                try {
+                    await setVoiceChannel(store, channel.id, true);
+                } catch (err) {
+                    // The channel exists: open it, it can be made a voice channel from its settings
+                    logError('failed to make the new channel a voice channel', err);
+                }
+                return {status: 'created', channel};
+            },
+        });
     }
 
     // loadWhenLoggedIn loads the plugin's state once the current user is known.

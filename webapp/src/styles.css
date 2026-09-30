@@ -392,3 +392,22 @@
 .VoiceTile:hover .VoiceTile__fullscreen {
     opacity: 1;
 }
+
+/* New channel modal */
+
+.VoiceChannelPrivacy {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    border: none;
+    gap: 8px;
+}
+
+.VoiceChannelPrivacy__option {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-weight: normal;
+    gap: 8px;
+}
