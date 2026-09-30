@@ -11,8 +11,13 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"testing"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/mattermost/mattermost/server/public/plugin/plugintest"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // fakeKV is an in-memory kvAPI.
@@ -144,4 +149,62 @@ func (f *fakeCalls) setCall(channelID string, sessions map[string]string) {
 	for sessionID, userID := range sessions {
 		channel.Call.Sessions = append(channel.Call.Sessions, CallsSession{SessionID: sessionID, UserID: userID})
 	}
+}
+
+type testEnv struct {
+	p     *Plugin
+	api   *plugintest.API
+	kv    *fakeKV
+	calls *fakeCalls
+}
+
+func newTestEnv(t *testing.T) *testEnv {
+	t.Helper()
+
+	api := &plugintest.API{}
+	t.Cleanup(func() { api.AssertExpectations(t) })
+	// Allow logging with any number of key/value pairs
+	for _, level := range []string{"LogDebug", "LogInfo", "LogWarn", "LogError"} {
+		for n := 1; n <= 7; n += 2 {
+			args := make([]any, n)
+			for i := range args {
+				args[i] = mock.Anything
+			}
+			api.On(level, args...).Maybe()
+		}
+	}
+
+	kv := newFakeKV()
+	calls := newFakeCalls()
+	p := &Plugin{
+		MattermostPlugin: plugin.MattermostPlugin{API: api},
+		configuration:    &configuration{AutoJoin: true, AllowVideo: true},
+		store:            NewStore(kv),
+		calls:            NewCallsClient(calls.pluginHTTP),
+	}
+	p.router = p.newRouter()
+
+	return &testEnv{p: p, api: api, kv: kv, calls: calls}
+}
+
+// request serves a request to the plugin's REST API as the given user.
+func (e *testEnv) request(t *testing.T, userID, method, path string, body any) *httptest.ResponseRecorder {
+	t.Helper()
+
+	var reqBody *bytes.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		require.NoError(t, err)
+		reqBody = bytes.NewReader(data)
+	} else {
+		reqBody = bytes.NewReader(nil)
+	}
+
+	r := httptest.NewRequest(method, path, reqBody)
+	if userID != "" {
+		r.Header.Set("Mattermost-User-Id", userID)
+	}
+	w := httptest.NewRecorder()
+	e.p.ServeHTTP(nil, w, r)
+	return w
 }

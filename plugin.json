@@ -18,5 +18,25 @@
     },
     "webapp": {
         "bundle_path": "webapp/dist/main.js"
+    },
+    "settings_schema": {
+        "header": "Voice channels are public or private channels that work like always-open voice rooms. Calls, including audio, video and screen sharing, are handled by the Calls plugin, which must be enabled. See the [documentation](https://docs.antimatter.example/voice-channels) to learn more.",
+        "footer": "",
+        "settings": [
+            {
+                "key": "AutoJoin",
+                "display_name": "Join when opening a voice channel",
+                "type": "bool",
+                "default": true,
+                "help_text": "When true, opening a voice channel from the sidebar joins its call. When false, users join with the Join button of the voice channel."
+            },
+            {
+                "key": "AllowVideo",
+                "display_name": "Allow video in voice channels",
+                "type": "bool",
+                "default": true,
+                "help_text": "When true, participants of voice channels can turn on their camera. Video must also be enabled in the Calls plugin settings."
+            }
+        ]
     }
 }

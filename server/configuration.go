@@ -17,7 +17,14 @@ import (
 // configuration can change at any time, access to the configuration must be synchronized. The
 // strategy used in this plugin is to guard a pointer to the configuration, and clone the entire
 // struct whenever it changes. You may replace this with whatever strategy you choose.
-type configuration struct{}
+type configuration struct {
+	// AutoJoin makes opening a voice channel from the sidebar join its call.
+	AutoJoin bool
+
+	// AllowVideo lets the participants of voice channels turn on their camera. Video also has
+	// to be enabled in the Calls plugin.
+	AllowVideo bool
+}
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
 // your configuration has reference types.
