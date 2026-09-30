@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/pkg/errors"
 )
 
 // Plugin implements the interface expected by the Antimatter server to communicate between the
@@ -33,6 +34,10 @@ func (p *Plugin) OnActivate() error {
 	p.store = NewStore(p.API)
 	p.calls = NewCallsClient(p.API.PluginHTTP)
 	p.router = p.newRouter()
+
+	if err := p.API.RegisterCommand(voiceCommand()); err != nil {
+		return errors.Wrap(err, "failed to register the /voice command")
+	}
 
 	return nil
 }
