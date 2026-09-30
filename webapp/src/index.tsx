@@ -31,6 +31,7 @@ import manifest from './manifest';
 import reducer from './reducer';
 import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
+import {isFusionUI} from './web_ui';
 
 import './styles.css';
 
@@ -102,15 +103,24 @@ export default class Plugin implements PluginClass {
     }
 
     private registerSidebar(registry: PluginRegistry) {
-        // Hosts without the sidebar channel footer show the participants' avatars next to the name
-        const hasFooter = typeof registry.registerSidebarChannelFooterComponent === 'function';
-        registry.registerSidebarChannelFooterComponent?.(SidebarParticipants);
-        registry.registerSidebarChannelLinkLabelComponent(makeSidebarChannelLabel(!hasFooter));
+        // Fusion shows the participants under voice channels itself, and joins them when they're
+        // opened through window.antimatterVoiceChannels.autoJoin.
+        if (!isFusionUI()) {
+            // Hosts without the sidebar channel footer show the participants' avatars next to the name
+            const hasFooter = typeof registry.registerSidebarChannelFooterComponent === 'function';
+            registry.registerSidebarChannelFooterComponent?.(SidebarParticipants);
+            registry.registerSidebarChannelLinkLabelComponent(makeSidebarChannelLabel(!hasFooter));
+        }
 
         registry.registerChannelIconOverride?.((state, channel: Channel) => isActiveVoiceChannel(state, channel), 'volume-high');
     }
 
     private registerChannelView(registry: PluginRegistry, store: PluginStore) {
+        // Fusion shows the call of voice channels itself
+        if (isFusionUI()) {
+            return;
+        }
+
         if (typeof registry.registerChannelViewPanel === 'function') {
             registry.registerChannelViewPanel(
                 (state, channel) => isActiveVoiceChannel(state, channel) && isCallsAvailable(state),

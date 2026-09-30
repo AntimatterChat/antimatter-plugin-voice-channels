@@ -59,6 +59,7 @@ describe('Plugin', () => {
         plugin.initialize(registry as unknown as PluginRegistry, makeStore(state));
 
         expect(registry.registerSidebarChannelFooterComponent).toHaveBeenCalled();
+        expect(registry.registerSidebarChannelLinkLabelComponent).toHaveBeenCalled();
         expect(registry.registerChannelViewPanel).toHaveBeenCalled();
         expect(registry.registerChannelIconOverride).toHaveBeenCalledWith(expect.any(Function), 'volume-high');
         expect(registry.registerChannelSettingsTab).toHaveBeenCalled();
@@ -76,6 +77,30 @@ describe('Plugin', () => {
         expect(registry.registerChannelHeaderButtonAction).toHaveBeenCalled();
         expect(registry.registerSidebarChannelLinkLabelComponent).toHaveBeenCalled();
         plugin.uninitialize?.();
+    });
+
+    test('leaves the sidebar participants and the call view to Fusion', () => {
+        window.antimatterWebUI = 'fusion';
+        try {
+            const registry = makeRegistry(true);
+            const plugin = new Plugin();
+            plugin.initialize(registry as unknown as PluginRegistry, makeStore(state));
+
+            expect(registry.registerSidebarChannelFooterComponent).not.toHaveBeenCalled();
+            expect(registry.registerSidebarChannelLinkLabelComponent).not.toHaveBeenCalled();
+            expect(registry.registerChannelViewPanel).not.toHaveBeenCalled();
+            expect(registry.registerRightHandSidebarComponent).not.toHaveBeenCalled();
+            expect(registry.registerChannelHeaderButtonAction).not.toHaveBeenCalled();
+
+            // The rest stays
+            expect(registry.registerReducer).toHaveBeenCalled();
+            expect(registry.registerChannelIconOverride).toHaveBeenCalledWith(expect.any(Function), 'volume-high');
+            expect(registry.registerChannelSettingsTab).toHaveBeenCalled();
+            expect(registry.registerChannelTypeOption).toHaveBeenCalled();
+            plugin.uninitialize?.();
+        } finally {
+            delete window.antimatterWebUI;
+        }
     });
 
     test('channel settings tab', async () => {
