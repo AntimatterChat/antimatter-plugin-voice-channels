@@ -1,11 +1,26 @@
 // Copyright (c) 2026-present Antimatter contributors.
 // See LICENSE.txt for license information.
 
-import {makeState, makeStore, teamId} from '../tests/utils';
+import type {GlobalState} from '@mattermost/types/store';
 
-import {LEAVE_TIMEOUT, autoJoinVoiceChannel, joinVoiceChannel} from './call_control';
+import {currentUserId, makeState, makeStore, teamId} from '../tests/utils';
+
+import {
+    LEAVE_TIMEOUT,
+    autoJoinVoiceChannel,
+    joinVoiceChannel,
+    setDeafened,
+    startDeafenController,
+    stopDeafenController,
+} from './call_control';
+import * as client from './client';
+import {isSessionDeafened} from './selectors';
 import type {CallsPluginState} from './types/calls';
 import type CallsClient from './types/calls_client';
+
+jest.mock('./client', () => ({
+    setSessionDeafened: jest.fn(() => Promise.resolve({})),
+}));
 
 const channels = [{id: 'voice1'}, {id: 'voice2'}, {id: 'dm', type: 'D'}];
 
@@ -149,3 +164,87 @@ describe('joinVoiceChannel', () => {
         expect(postMessage).toHaveBeenCalledWith(joinMessage('voice1'), window.origin);
     });
 });
+
+describe('deafen', () => {
+    const callsInCall = (unmuted: boolean): CallsPluginState => ({
+        sessions: {voice1: {mysession: {session_id: 'mysession', user_id: currentUserId, unmuted, raised_hand: 0}}},
+    });
+    const inCall = (unmuted: boolean) => stateWith(callsInCall(unmuted));
+
+    afterEach(() => {
+        stopDeafenController();
+        delete window.callsClient;
+        jest.clearAllMocks();
+    });
+
+    test('deafening disables the call audio and mutes, undeafening restores both', async () => {
+        const callsClient = fakeCallsClient('voice1');
+        window.callsClient = callsClient as unknown as CallsClient;
+        const store = makeStore(inCall(true));
+        startDeafenController(store);
+
+        await setDeafened(store, true);
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(true);
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([false, false]);
+        expect(callsClient.mute).toHaveBeenCalled();
+        expect(client.setSessionDeafened).toHaveBeenCalledWith('voice1', 'mysession', true);
+
+        // New remote audio stays disabled
+        const newTrack = {enabled: true};
+        callsClient.emit('remoteVoiceStream', {getAudioTracks: () => [newTrack]});
+        expect(newTrack.enabled).toBe(false);
+
+        // Calls reports the mute
+        setCallsState(store, callsInCall(false));
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(true);
+
+        await setDeafened(store, false);
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(false);
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([true, true]);
+        expect(callsClient.unmute).toHaveBeenCalled();
+        expect(client.setSessionDeafened).toHaveBeenLastCalledWith('voice1', 'mysession', false);
+    });
+
+    test('unmuting undeafens', async () => {
+        const callsClient = fakeCallsClient('voice1');
+        window.callsClient = callsClient as unknown as CallsClient;
+        const store = makeStore(inCall(false));
+        startDeafenController(store);
+
+        await setDeafened(store, true);
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(true);
+
+        // The user unmutes in the call widget
+        setCallsState(store, callsInCall(true));
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(false);
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([true, true]);
+        expect(client.setSessionDeafened).toHaveBeenLastCalledWith('voice1', 'mysession', false);
+    });
+
+    test('ending the call undeafens', async () => {
+        const callsClient = fakeCallsClient('voice1');
+        window.callsClient = callsClient as unknown as CallsClient;
+        const store = makeStore(inCall(false));
+        startDeafenController(store);
+
+        await setDeafened(store, true);
+        expect(callsClient.mute).not.toHaveBeenCalled(); // already muted
+
+        delete window.callsClient;
+        setCallsState(store, {});
+        expect(isSessionDeafened(store.getState(), 'voice1', 'mysession')).toBe(false);
+        expect(client.setSessionDeafened).toHaveBeenLastCalledWith('voice1', 'mysession', false);
+    });
+
+    test('does nothing outside of a call of this window', async () => {
+        const store = makeStore(inCall(true));
+        startDeafenController(store);
+        await setDeafened(store, true);
+        expect(client.setSessionDeafened).not.toHaveBeenCalled();
+    });
+});
+
+// setCallsState replaces the state of the Calls plugin.
+function setCallsState(store: ReturnType<typeof makeStore>, calls: CallsPluginState) {
+    store.setState({...store.getState(), 'plugins-com.mattermost.calls': calls} as GlobalState);
+}

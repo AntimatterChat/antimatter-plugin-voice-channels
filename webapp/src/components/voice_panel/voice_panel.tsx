@@ -10,12 +10,13 @@ import type {GlobalState} from '@mattermost/types/store';
 
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
-import {joinVoiceChannel, leaveCall} from '../../call_control';
+import {joinVoiceChannel, leaveCall, setDeafened} from '../../call_control';
 import {
     getCurrentCallChannelId,
     getMySessionId,
     getParticipants,
     isCallsAvailable,
+    isSessionDeafened,
     type Participant,
 } from '../../selectors';
 import type {PluginStore} from '../../types/host';
@@ -27,6 +28,8 @@ const messages = defineMessages({
     stage: {id: 'voice_channels.stage.label', defaultMessage: 'Voice call'},
     join: {id: 'voice_channels.stage.join', defaultMessage: 'Join voice'},
     leave: {id: 'voice_channels.stage.leave', defaultMessage: 'Disconnect'},
+    deafen: {id: 'voice_channels.stage.deafen', defaultMessage: 'Deafen'},
+    undeafen: {id: 'voice_channels.stage.undeafen', defaultMessage: 'Undeafen'},
     showChat: {id: 'voice_channels.stage.show_chat', defaultMessage: 'Show chat'},
     hideChat: {id: 'voice_channels.stage.hide_chat', defaultMessage: 'Hide chat'},
 });
@@ -77,8 +80,8 @@ type Props = {
     setMessagesVisible?: (visible: boolean) => void;
 };
 
-// VoicePanel is the stage of a voice channel: a tile for every participant and screen share.
-// The call controls are in the Calls widget.
+// VoicePanel is the stage of a voice channel: a tile for every participant and screen share,
+// and the controls the Calls widget doesn't have.
 export default function VoicePanel({channel, messagesVisible, setMessagesVisible}: Props) {
     const {formatMessage} = useIntl();
     const store = useStore() as PluginStore;
@@ -87,6 +90,7 @@ export default function VoicePanel({channel, messagesVisible, setMessagesVisible
     const currentUserId = useSelector(getCurrentUserId);
     const inThisCall = useSelector((state: GlobalState) => getCurrentCallChannelId(state) === channel.id);
     const mySessionId = useSelector((state: GlobalState) => (inThisCall ? getMySessionId(state) : ''));
+    const deafened = useSelector((state: GlobalState) => isSessionDeafened(state, channel.id, mySessionId));
     const callsAvailable = useSelector(isCallsAvailable);
 
     // The call's media is only in this window when it runs here (not in the desktop app's call window)
@@ -106,6 +110,7 @@ export default function VoicePanel({channel, messagesVisible, setMessagesVisible
     }, []);
     const handleJoin = useCallback(() => joinVoiceChannel(store, channel.id, true), [store, channel.id]);
     const handleLeave = useCallback(() => leaveCall(channel.id), [channel.id]);
+    const handleDeafen = useCallback(() => setDeafened(store, !deafened), [store, deafened]);
     const handleToggleChat = useCallback(() => setMessagesVisible?.(!messagesVisible), [setMessagesVisible, messagesVisible]);
 
     const renderTile = (tile: Tile, small = false) => (
@@ -191,6 +196,19 @@ export default function VoicePanel({channel, messagesVisible, setMessagesVisible
                     >
                         <i className='icon icon-phone-in-talk'/>
                         {formatMessage(messages.join)}
+                    </button>
+                )}
+                {inThisCall && callsClient && (
+                    <button
+                        type='button'
+                        className={`VoicePanel__control${deafened ? ' VoicePanel__control--danger' : ''}`}
+                        aria-label={formatMessage(deafened ? messages.undeafen : messages.deafen)}
+                        aria-pressed={deafened}
+                        title={formatMessage(deafened ? messages.undeafen : messages.deafen)}
+                        onClick={handleDeafen}
+                        data-testid='voicePanelDeafen'
+                    >
+                        <i className={`icon icon-headphones${deafened ? ' VoicePanel__deafenedIcon' : ''}`}/>
                     </button>
                 )}
                 {inThisCall && (

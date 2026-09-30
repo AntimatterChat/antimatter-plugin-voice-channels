@@ -16,6 +16,7 @@ import VoicePanel, {buildTiles} from './voice_panel';
 jest.mock('../../call_control', () => ({
     joinVoiceChannel: jest.fn(),
     leaveCall: jest.fn(),
+    setDeafened: jest.fn(),
 }));
 
 const channel = {id: 'voice', display_name: 'Lounge', delete_at: 0, team_id: teamId, type: 'O'} as Channel;
@@ -119,6 +120,8 @@ describe('VoicePanel', () => {
         expect(screen.queryByRole('button', {name: /Join voice/})).not.toBeInTheDocument();
         expect(screen.getByTestId('voiceTile-s1')).toHaveTextContent('me (you)');
 
+        fireEvent.click(screen.getByRole('button', {name: 'Deafen'}));
+        expect(callControl.setDeafened).toHaveBeenCalledWith(store, true);
         fireEvent.click(screen.getByRole('button', {name: 'Disconnect'}));
         expect(callControl.leaveCall).toHaveBeenCalledWith('voice');
         fireEvent.click(screen.getByRole('button', {name: 'Show chat'}));
@@ -136,6 +139,7 @@ describe('VoicePanel', () => {
         );
 
         expect(screen.getByText('Cameras and screen shares are shown in the call window.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Deafen'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Disconnect'})).toBeInTheDocument();
 
         // Without setMessagesVisible there's no chat toggle

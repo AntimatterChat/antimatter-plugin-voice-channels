@@ -22,7 +22,8 @@
 }
 
 /* There is no "headphones off" icon, so a slash is drawn over the headphones */
-.VoiceStatusIcons__icon--off::after {
+.VoiceStatusIcons__icon--off::after,
+.VoicePanel__deafenedIcon::after {
     position: absolute;
     top: 50%;
     left: 0;
@@ -264,6 +265,10 @@
 
 .VoicePanel__chatToggle {
     margin-left: auto;
+}
+
+.VoicePanel__deafenedIcon {
+    position: relative;
 }
 
 /* Tiles */

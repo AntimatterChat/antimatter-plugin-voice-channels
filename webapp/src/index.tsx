@@ -16,6 +16,7 @@ import {
     loadVoiceChannel,
     loadVoiceChannels,
 } from './actions';
+import {startDeafenController, stopDeafenController} from './call_control';
 import RHSVoicePanel from './components/rhs_voice_panel';
 import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
@@ -49,6 +50,9 @@ export default class Plugin implements PluginClass {
         this.registerWebSocketEvents(registry, store);
         this.registerSidebar(registry);
         this.registerChannelView(registry, store);
+
+        startDeafenController(store);
+        this.unsubscribers.push(stopDeafenController);
 
         this.loadWhenLoggedIn(store);
         this.watchCurrentChannel(store);
