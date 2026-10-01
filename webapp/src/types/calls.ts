@@ -20,6 +20,7 @@ export type CallsPluginState = {
     calls?: {[channelID: string]: {ID: string; channelID: string; startAt: number; ownerID: string}};
     sessions?: {[channelID: string]: {[sessionID: string]: CallsSessionState}};
     screenSharingIDs?: {[channelID: string]: string};
+    hosts?: {[channelID: string]: {hostID: string}};
     clientStateReducer?: {channelID: string; sessionID: string} | null;
 
     // The call run by this window (recent Calls versions)

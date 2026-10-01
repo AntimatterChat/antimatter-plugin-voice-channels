@@ -103,6 +103,20 @@ describe('Plugin', () => {
         }
     });
 
+    test('installs its API while running', () => {
+        const onReady = jest.fn();
+        window.addEventListener('antimatter-voice-channels:ready', onReady);
+        const plugin = new Plugin();
+        plugin.initialize(makeRegistry(true) as unknown as PluginRegistry, makeStore(state));
+
+        expect(window.antimatterVoiceChannels?.version).toBe(1);
+        expect(onReady).toHaveBeenCalled();
+
+        plugin.uninitialize?.();
+        expect(window.antimatterVoiceChannels).toBeUndefined();
+        window.removeEventListener('antimatter-voice-channels:ready', onReady);
+    });
+
     test('channel settings tab', async () => {
         const registry = makeRegistry(true);
         const store = makeStore(state);

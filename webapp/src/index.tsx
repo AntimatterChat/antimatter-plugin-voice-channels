@@ -28,6 +28,7 @@ import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
 import VoicePanel from './components/voice_panel/voice_panel';
 import manifest from './manifest';
+import {createVoiceChannelsAPI} from './public_api';
 import reducer from './reducer';
 import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
@@ -73,6 +74,16 @@ export default class Plugin implements PluginClass {
 
         startDeafenController(store);
         this.unsubscribers.push(stopDeafenController);
+
+        // Let other UIs (the Fusion web UI) show and drive voice channels
+        const api = createVoiceChannelsAPI(store);
+        window.antimatterVoiceChannels = api;
+        this.unsubscribers.push(() => {
+            if (window.antimatterVoiceChannels === api) {
+                delete window.antimatterVoiceChannels;
+            }
+        });
+        window.dispatchEvent(new Event('antimatter-voice-channels:ready'));
 
         this.loadWhenLoggedIn(store);
         this.watchCurrentChannel(store);
