@@ -1,0 +1,413 @@
+/* Copyright (c) 2026-present Antimatter contributors. See LICENSE.txt for license information. */
+
+/* Participant status icons */
+
+.VoiceStatusIcons {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+}
+
+.VoiceStatusIcons__icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    opacity: 0.72;
+}
+
+.VoiceStatusIcons__icon::before {
+    margin: 0;
+}
+
+/* There is no "headphones off" icon, so a slash is drawn over the headphones */
+.VoiceStatusIcons__icon--off::after,
+.VoicePanel__deafenedIcon::after {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--error-text);
+    content: '';
+    transform: rotate(-45deg);
+}
+
+.VoiceStatusIcons__icon--muted,
+.VoiceStatusIcons__icon--off {
+    color: var(--error-text);
+    opacity: 1;
+}
+
+.VoiceStatusIcons__icon--hand {
+    color: var(--away-indicator);
+    opacity: 1;
+}
+
+/* Sidebar */
+
+.VoiceSidebarParticipants {
+    padding: 0 0 4px 44px;
+    margin: 0;
+    list-style: none;
+}
+
+.VoiceSidebarParticipant {
+    display: flex;
+    height: 26px;
+    align-items: center;
+    padding-right: 16px;
+    color: rgba(var(--sidebar-text-rgb), 0.72);
+    gap: 8px;
+}
+
+.VoiceSidebarParticipant__avatar {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px transparent;
+    transition: box-shadow 0.1s ease-in-out;
+}
+
+.VoiceSidebarParticipant__name {
+    overflow: hidden;
+    min-width: 0;
+    flex: 1;
+    font-size: 13px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.VoiceSidebarParticipant__name--you {
+    font-weight: 600;
+}
+
+.VoiceSidebarParticipant--speaking {
+    color: var(--sidebar-text);
+}
+
+.VoiceSidebarParticipant--speaking .VoiceSidebarParticipant__avatar {
+    box-shadow: 0 0 0 2px var(--online-indicator);
+}
+
+.VoiceSidebarLabel {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.VoiceSidebarLabel__avatar {
+    width: 16px;
+    height: 16px;
+    margin-left: -4px;
+    border: 1px solid var(--sidebar-bg);
+    border-radius: 50%;
+}
+
+.VoiceSidebarLabel__avatar:first-child {
+    margin-left: 0;
+}
+
+.VoiceSidebarLabel__avatar--speaking {
+    border-color: var(--online-indicator);
+}
+
+.VoiceSidebarLabel__more {
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.72;
+}
+
+/* Stage */
+
+.VoicePanel {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    background-color: rgba(var(--center-channel-color-rgb), 0.04);
+}
+
+.VoicePanel__body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.VoicePanel__empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--center-channel-color-rgb), 0.56);
+}
+
+.VoicePanel__empty .icon {
+    font-size: 48px;
+}
+
+.VoicePanel__empty p {
+    margin: 8px 0 0;
+    font-size: 16px;
+}
+
+.VoicePanel__grid {
+    display: grid;
+    width: 100%;
+    align-content: center;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.VoicePanel__grid--single {
+    max-width: 960px;
+    margin: 0 auto;
+    grid-template-columns: 1fr;
+}
+
+.VoicePanel__grid--few {
+    max-width: 1280px;
+    margin: 0 auto;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.VoicePanel__focusLayout {
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.VoicePanel__focused {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+.VoicePanel__focused .VoiceTile {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+}
+
+.VoicePanel__strip {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.VoicePanel__strip .VoiceTile {
+    width: 180px;
+    flex: 0 0 auto;
+}
+
+.VoicePanel__notice {
+    margin: 0;
+    padding: 0 16px 8px;
+    color: rgba(var(--center-channel-color-rgb), 0.64);
+    text-align: center;
+}
+
+.VoicePanel__footer {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px 12px;
+    gap: 8px;
+}
+
+.VoicePanel__join .icon {
+    margin-right: 4px;
+}
+
+.VoicePanel__control {
+    position: relative;
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(var(--center-channel-color-rgb), 0.08);
+    color: rgba(var(--center-channel-color-rgb), 0.72);
+    font-size: 18px;
+}
+
+.VoicePanel__control:hover,
+.VoicePanel__control:focus-visible {
+    background-color: rgba(var(--center-channel-color-rgb), 0.16);
+    color: var(--center-channel-color);
+}
+
+.VoicePanel__control--active {
+    background-color: rgba(var(--button-bg-rgb), 0.16);
+    color: var(--button-bg);
+}
+
+.VoicePanel__control--danger {
+    background-color: rgba(var(--error-text-color-rgb), 0.16);
+    color: var(--error-text);
+}
+
+.VoicePanel__chatToggle {
+    margin-left: auto;
+}
+
+.VoicePanel__deafenedIcon {
+    position: relative;
+}
+
+/* Tiles */
+
+.VoiceTile {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    border-radius: 8px;
+    aspect-ratio: 16 / 9;
+    background-color: rgba(var(--center-channel-color-rgb), 0.12);
+    box-shadow: 0 0 0 2px transparent;
+    transition: box-shadow 0.1s ease-in-out;
+}
+
+.VoiceTile--speaking {
+    box-shadow: 0 0 0 3px var(--online-indicator);
+}
+
+.VoiceTile--screen {
+    background-color: #000;
+}
+
+.VoiceTile:fullscreen {
+    border-radius: 0;
+}
+
+.VoiceTile__content {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    outline: none;
+}
+
+.VoiceTile__content:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--button-bg);
+}
+
+.VoiceTile__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.VoiceTile__video--contain {
+    object-fit: contain;
+}
+
+.VoiceVideo--mirrored {
+    transform: scaleX(-1);
+}
+
+.VoiceTile__avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px transparent;
+    transition: box-shadow 0.1s ease-in-out;
+}
+
+.VoiceTile--small .VoiceTile__avatar {
+    width: 40px;
+    height: 40px;
+}
+
+.VoiceTile--speaking .VoiceTile__avatar {
+    box-shadow: 0 0 0 3px var(--online-indicator);
+}
+
+.VoiceTile__label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    max-width: calc(100% - 16px);
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.56);
+    color: #fff;
+    font-size: 12px;
+    gap: 6px;
+    line-height: 18px;
+}
+
+.VoiceTile--small .VoiceTile__label {
+    bottom: 4px;
+    left: 4px;
+    padding: 0 4px;
+    font-size: 11px;
+}
+
+.VoiceTile__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.VoiceTile__fullscreen {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.56);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.VoiceTile__fullscreen:focus-visible,
+.VoiceTile:hover .VoiceTile__fullscreen {
+    opacity: 1;
+}
+
+/* New channel modal */
+
+.VoiceChannelPrivacy {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    border: none;
+    gap: 8px;
+}
+
+.VoiceChannelPrivacy__option {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-weight: normal;
+    gap: 8px;
+}
