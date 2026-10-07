@@ -47,6 +47,10 @@ export type NewChannelFormState = {
     url: string;
     purpose: string;
     type: string;
+
+    // Whether the channel is public (O) or private (P), when the host asks it itself, as the Fusion web UI does for
+    // every type of channel.
+    privacy?: 'O' | 'P';
 };
 
 export type NewChannelFormResult =
