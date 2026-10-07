@@ -22,7 +22,7 @@ import {
     setVoiceChannel,
 } from './actions';
 import {startDeafenController, stopDeafenController} from './call_control';
-import VoiceChannelPrivacy, {newVoiceChannelPrivacy} from './components/channel_type_option';
+import VoiceChannelPrivacy, {newVoiceChannelType} from './components/channel_type_option';
 import RHSVoicePanel from './components/rhs_voice_panel';
 import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
@@ -192,7 +192,7 @@ export default class Plugin implements PluginClass {
                         display_name: form.displayName,
                         purpose: form.purpose,
                         header: '',
-                        type: newVoiceChannelPrivacy.isPrivate ? 'P' : 'O',
+                        type: newVoiceChannelType(form),
                     } as Channel);
                 } catch (err) {
                     return {status: 'error', message: (err as Error).message};
