@@ -5,6 +5,7 @@ import type {GlobalState} from '@mattermost/types/store';
 
 import {getChannel} from 'mattermost-redux/selectors/entities/channels';
 
+import {loadVoiceChannel} from './actions';
 import {autoJoinVoiceChannel, joinVoiceChannel, leaveCall, setDeafened} from './call_control';
 import {
     callsState,
@@ -13,6 +14,7 @@ import {
     getMySessionId,
     getParticipants,
     isActiveVoiceChannel,
+    isKnownChannel,
     isSessionDeafened,
     isVoiceChannel,
     type Participant,
@@ -93,5 +95,19 @@ export function createVoiceChannelsAPI(store: PluginStore): AntimatterVoiceChann
         setDeafened: (deafened) => {
             setDeafened(store, deafened);
         },
+
+        load: async (channelIds) => {
+            const state = store.getState();
+            const wanted = channelIds.filter((id) => !isKnownChannel(state, id) && !loading.has(id));
+            wanted.forEach((id) => loading.add(id));
+            try {
+                await Promise.all(wanted.map((id) => loadVoiceChannel(store, id)));
+            } finally {
+                wanted.forEach((id) => loading.delete(id));
+            }
+        },
     };
 }
+
+// The channels being loaded, so that asking again meanwhile doesn't ask the server twice.
+const loading = new Set<string>();

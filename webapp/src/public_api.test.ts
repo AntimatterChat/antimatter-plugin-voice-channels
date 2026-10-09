@@ -3,9 +3,14 @@
 
 import {currentUserId, makeState, makeStore, teamId} from '../tests/utils';
 
+import * as actions from './actions';
 import * as callControl from './call_control';
 import {createVoiceChannelsAPI, selectors} from './public_api';
 import type {CallsPluginState} from './types/calls';
+
+jest.mock('./actions', () => ({
+    loadVoiceChannel: jest.fn(() => Promise.resolve()),
+}));
 
 jest.mock('./call_control', () => ({
     autoJoinVoiceChannel: jest.fn(),
@@ -76,7 +81,7 @@ describe('createVoiceChannelsAPI', () => {
     test('exposes the contract', () => {
         const api = createVoiceChannelsAPI(makeStore(stateWith({})));
         expect(api.version).toBe(1);
-        expect(Object.keys(api).sort()).toEqual(['autoJoin', 'join', 'leave', 'selectors', 'setDeafened', 'version']);
+        expect(Object.keys(api).sort()).toEqual(['autoJoin', 'join', 'leave', 'load', 'selectors', 'setDeafened', 'version']);
         expect(Object.keys(api.selectors).sort()).toEqual(['getAutoJoin', 'getParticipants', 'isDeafened', 'isVoiceChannel']);
     });
 
@@ -103,5 +108,15 @@ describe('createVoiceChannelsAPI', () => {
         const api = createVoiceChannelsAPI(makeStore(stateWith({})));
         api.leave();
         expect(callControl.leaveCall).not.toHaveBeenCalled();
+    });
+
+    test('load asks about the channels it doesn\'t know yet, once at a time', async () => {
+        const store = makeStore(stateWith({}));
+        const api = createVoiceChannelsAPI(store);
+        const load = actions.loadVoiceChannel as jest.Mock;
+        load.mockClear();
+
+        await Promise.all([api.load!(['voice', 'unknown', 'other']), api.load!(['unknown'])]);
+        expect(load.mock.calls.map((call) => call[1])).toEqual(['unknown', 'other']);
     });
 });

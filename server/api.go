@@ -67,16 +67,19 @@ func (p *Plugin) readableChannel(r *http.Request) (*model.Channel, error) {
 	userID := r.Header.Get("Mattermost-User-Id")
 	channelID := mux.Vars(r)["channel_id"]
 
-	if !p.API.HasPermissionToChannel(userID, channelID, model.PermissionReadChannel) {
-		return nil, newAPIError(http.StatusForbidden, "you don't have access to this channel")
-	}
-
 	channel, appErr := p.API.GetChannel(channelID)
 	if appErr != nil {
 		if appErr.StatusCode == http.StatusNotFound {
 			return nil, newAPIError(http.StatusNotFound, "channel not found")
 		}
 		return nil, appErr
+	}
+
+	// A channel the user is in, or a public channel of one of their teams, as Mattermost reads channels: those
+	// browsing a team's channels learn which are voice channels.
+	if !p.API.HasPermissionToChannel(userID, channelID, model.PermissionReadChannel) &&
+		(channel.Type != model.ChannelTypeOpen || !p.API.HasPermissionToTeam(userID, channel.TeamId, model.PermissionReadPublicChannel)) {
+		return nil, newAPIError(http.StatusForbidden, "you don't have access to this channel")
 	}
 	return channel, nil
 }

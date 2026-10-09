@@ -122,7 +122,9 @@ func TestAPIUpdateChannel(t *testing.T) {
 
 	t.Run("no access to the channel", func(t *testing.T) {
 		e := newTestEnv(t)
+		e.api.On("GetChannel", channel.Id).Return(channel, nil)
 		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
+		e.api.On("HasPermissionToTeam", userID, channel.TeamId, model.PermissionReadPublicChannel).Return(false).Maybe()
 		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
 		require.Equal(t, http.StatusForbidden, w.Code)
 	})
@@ -158,16 +160,38 @@ func TestAPIGetChannel(t *testing.T) {
 	require.Equal(t, VoiceChannelState{ChannelID: channel.Id, TeamID: channel.TeamId, Voice: true, DeafenedSessions: map[string]string{sessionID: otherUserID}},
 		decode[VoiceChannelState](t, w.Body.Bytes()))
 
-	t.Run("no access", func(t *testing.T) {
+	t.Run("a private channel the user isn't in", func(t *testing.T) {
 		e := newTestEnv(t)
+		private := &model.Channel{Id: channel.Id, TeamId: channel.TeamId, Type: model.ChannelTypePrivate}
+		e.api.On("GetChannel", channel.Id).Return(private, nil)
 		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
+		w := e.request(t, userID, http.MethodGet, path, nil)
+		require.Equal(t, http.StatusForbidden, w.Code)
+	})
+
+	t.Run("a public channel of the user's team, not joined", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.api.On("GetChannel", channel.Id).Return(channel, nil)
+		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
+		e.api.On("HasPermissionToTeam", userID, channel.TeamId, model.PermissionReadPublicChannel).Return(true)
+		require.NoError(t, e.p.store.SaveVoiceChannel(&VoiceChannel{ChannelID: channel.Id, TeamID: channel.TeamId}))
+		w := e.request(t, userID, http.MethodGet, path, nil)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.True(t, decode[VoiceChannelState](t, w.Body.Bytes()).Voice)
+	})
+
+	t.Run("a public channel of another team", func(t *testing.T) {
+		e := newTestEnv(t)
+		e.api.On("GetChannel", channel.Id).Return(channel, nil)
+		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
+		e.api.On("HasPermissionToTeam", userID, channel.TeamId, model.PermissionReadPublicChannel).Return(false)
 		w := e.request(t, userID, http.MethodGet, path, nil)
 		require.Equal(t, http.StatusForbidden, w.Code)
 	})
 
 	t.Run("deleted channel", func(t *testing.T) {
 		e := newTestEnv(t)
-		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(true)
+		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(true).Maybe()
 		e.api.On("GetChannel", channel.Id).Return(nil, model.NewAppError("GetChannel", "not_found", nil, "", http.StatusNotFound))
 		w := e.request(t, userID, http.MethodGet, path, nil)
 		require.Equal(t, http.StatusNotFound, w.Code)
