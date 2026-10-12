@@ -80,7 +80,7 @@ func (p *Plugin) readableChannel(r *http.Request) (*model.Channel, error) {
 		return nil, appErr
 	}
 
-	// A channel the user is in, or a public channel of one of their teams, as Mattermost reads channels: those
+	// A channel the user is in, or a public channel of one of their teams, as the server reads channels: those
 	// browsing a team's channels learn which are voice channels.
 	if !p.API.HasPermissionToChannel(userID, channelID, model.PermissionReadChannel) &&
 		(channel.Type != model.ChannelTypeOpen || !p.API.HasPermissionToTeam(userID, channel.TeamId, model.PermissionReadPublicChannel)) {
