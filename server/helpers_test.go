@@ -80,8 +80,10 @@ func (f *fakeKV) KVList(page, perPage int) ([]string, *model.AppError) {
 type fakeCalls struct {
 	mu          sync.Mutex
 	unavailable bool
-	channels    map[string]*CallsChannel
-	posts       []map[string]any
+	// failure, when set, is the error status of every request
+	failure  int
+	channels map[string]*CallsChannel
+	posts    []map[string]any
 }
 
 func newFakeCalls() *fakeCalls {
@@ -102,6 +104,11 @@ func (f *fakeCalls) pluginHTTP(r *http.Request) *http.Response {
 	channelID, ok := strings.CutPrefix(r.URL.Path, "/"+callsPluginID+"/")
 	if f.unavailable || !ok {
 		rec.WriteHeader(http.StatusNotFound)
+		return rec.Result()
+	}
+	if f.failure != 0 {
+		rec.WriteHeader(f.failure)
+		_, _ = rec.WriteString("calls internal details")
 		return rec.Result()
 	}
 

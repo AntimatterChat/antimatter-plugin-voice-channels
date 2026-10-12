@@ -120,6 +120,16 @@ func TestAPIUpdateChannel(t *testing.T) {
 		require.Nil(t, vc)
 	})
 
+	t.Run("internal errors don't reach the user", func(t *testing.T) {
+		e := setup(t, channel)
+		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionManagePublicChannelProperties).Return(true)
+		e.calls.failure = http.StatusInternalServerError
+
+		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
+		require.Equal(t, http.StatusInternalServerError, w.Code)
+		require.NotContains(t, w.Body.String(), "calls internal details")
+	})
+
 	t.Run("no access to the channel", func(t *testing.T) {
 		e := newTestEnv(t)
 		e.api.On("GetChannel", channel.Id).Return(channel, nil)

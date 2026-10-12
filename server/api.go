@@ -54,12 +54,17 @@ func (p *Plugin) writeJSON(w http.ResponseWriter, v any) {
 
 func (p *Plugin) writeError(w http.ResponseWriter, err error) {
 	status := statusFor(err)
+	message := err.Error()
 	if status >= http.StatusInternalServerError {
-		p.API.LogError("Voice channels request failed", "err", err.Error())
+		p.API.LogError("Voice channels request failed", "err", message)
+	}
+	if status == http.StatusInternalServerError {
+		// The details of unexpected errors go to the log, not to the user
+		message = "internal error, please try again"
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
 // readableChannel returns the channel of the request if the user can read it.
