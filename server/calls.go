@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"reflect"
 
@@ -88,7 +89,7 @@ func (c *CallsClient) do(method, channelID string, body any, out any) error {
 	if resp == nil {
 		return errCallsUnavailable
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch {
 	case resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusNotImplemented:
@@ -125,9 +126,7 @@ func (c *CallsClient) SetVoiceProps(channelID string, enabled, allowVideo bool) 
 	}
 
 	props := map[string]any{}
-	for k, v := range channel.Props {
-		props[k] = v
-	}
+	maps.Copy(props, channel.Props)
 	for _, k := range voiceCallsProps {
 		delete(props, k)
 	}

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,7 +24,7 @@ func (p *Plugin) syncCallsSettings() error {
 
 	allowVideo := p.getConfiguration().AllowVideo
 	for _, vc := range channels {
-		if _, appErr := p.API.GetChannel(vc.ChannelID); appErr != nil && appErr.StatusCode == 404 {
+		if _, appErr := p.API.GetChannel(vc.ChannelID); appErr != nil && appErr.StatusCode == http.StatusNotFound {
 			// The channel was deleted
 			if err := p.store.DeleteVoiceChannel(vc.ChannelID); err != nil {
 				p.API.LogWarn("Failed to forget a deleted voice channel", "channel_id", vc.ChannelID, "err", err.Error())

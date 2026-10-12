@@ -151,9 +151,9 @@ func (p *Plugin) setSessionDeafened(userID string, channel *model.Channel, sessi
 	}
 
 	if deafened {
-		callsChannel, err := p.calls.GetChannel(channel.Id)
-		if err != nil {
-			return errors.Wrap(err, "failed to get the call")
+		callsChannel, callsErr := p.calls.GetChannel(channel.Id)
+		if callsErr != nil {
+			return errors.Wrap(callsErr, "failed to get the call")
 		}
 		if !callsChannel.HasSession(sessionID, userID) {
 			return newAPIError(http.StatusBadRequest, "the session isn't in the call")
