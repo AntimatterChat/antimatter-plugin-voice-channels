@@ -33,6 +33,7 @@ import reducer from './reducer';
 import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
 import {isFusionUI} from './web_ui';
+import {registerTranslations} from './translations';
 
 import './styles.css';
 
@@ -62,6 +63,8 @@ export default class Plugin implements PluginClass {
     private unsubscribers: Array<() => void> = [];
 
     public initialize(registry: PluginRegistry, store: PluginStore) {
+        registerTranslations(registry);
+
         if (window.basename) {
             Client4.setUrl(window.basename);
         }
