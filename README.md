@@ -72,7 +72,8 @@ System Console > Plugins > Voice Channels:
 They can also be set in `PluginSettings.Plugins["com.antimatterchat.voice-channels"]` (keys in
 lowercase: `autojoin`, `allowvideo`).
 
-See the [documentation](https://docs.antimatter.example/voice-channels) for more.
+See the [user guide](https://antimatter.chat/docs/users/calls.html#voice-channels) and the
+[admin guide](https://antimatter.chat/docs/admins/calls.html#general) for more.
 
 ## How it works
 
