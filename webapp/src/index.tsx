@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
+import {FormattedMessage} from 'react-intl';
 
 import type {Channel} from '@mattermost/types/channels';
 import type {GlobalState} from '@mattermost/types/store';
@@ -23,11 +24,13 @@ import {
 } from './actions';
 import {startDeafenController, stopDeafenController} from './call_control';
 import VoiceChannelPrivacy, {newVoiceChannelType} from './components/channel_type_option';
+import {messages} from './components/messages';
 import RHSVoicePanel from './components/rhs_voice_panel';
 import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
 import VoicePanel from './components/voice_panel/voice_panel';
 import manifest from './manifest';
+import {intlFor} from './intl';
 import {createVoiceChannelsAPI} from './public_api';
 import reducer from './reducer';
 import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
@@ -144,30 +147,32 @@ export default class Plugin implements PluginClass {
         }
 
         // Hosts without channel view panels get the stage in the right-hand sidebar
-        const rhs = registry.registerRightHandSidebarComponent(RHSVoicePanel, 'Voice');
+        const rhs = registry.registerRightHandSidebarComponent(RHSVoicePanel, <FormattedMessage {...messages.panelTitle}/>);
         registry.registerChannelHeaderButtonAction(
             <i className='icon icon-volume-high'/>,
             () => store.dispatch(rhs.toggleRHSPlugin),
-            'Voice',
-            'Voice channel',
+            <FormattedMessage {...messages.panelTitle}/>,
+            <FormattedMessage {...messages.headerButton}/>,
         );
     }
 
     private registerChannelSettings(registry: PluginRegistry, store: PluginStore) {
+        // The host takes the settings tab's texts as plain strings, in the language of the moment.
+        const {formatMessage} = intlFor(store.getState());
         registry.registerChannelSettingsTab?.({
-            uiName: 'Voice',
+            uiName: formatMessage(messages.settingsTab),
             icon: 'icon-volume-high',
             shouldRender: canManageVoice,
             sections: [{
-                title: 'Voice channel',
+                title: formatMessage(messages.settingsSection),
                 settings: [{
                     name: 'voice',
                     type: 'radio',
                     default: 'off',
-                    helpText: 'A voice channel works like an always-open call: members join and leave its call whenever they want, and can still chat in the channel. Calls must be enabled.',
+                    helpText: formatMessage(messages.settingsHelp),
                     options: [
-                        {value: 'on', text: 'Voice channel'},
-                        {value: 'off', text: 'Regular channel'},
+                        {value: 'on', text: formatMessage(messages.settingsOn)},
+                        {value: 'off', text: formatMessage(messages.settingsOff)},
                     ],
                 }],
             }],
@@ -181,8 +186,8 @@ export default class Plugin implements PluginClass {
         });
 
         registry.registerChannelTypeOption?.({
-            label: 'Voice channel',
-            description: 'An always-open call that members can hop in and out of',
+            label: <FormattedMessage {...messages.newChannelLabel}/>,
+            description: <FormattedMessage {...messages.newChannelDescription}/>,
             icon: isFusionUI() ? <svg className='am-ic'><use href='#am-i-speaker'/></svg> : <i className='icon icon-volume-high'/>,
             isAvailable: isCallsAvailable,
             extraContent: VoiceChannelPrivacy,

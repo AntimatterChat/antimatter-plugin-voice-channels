@@ -124,6 +124,15 @@ describe('Plugin', () => {
         plugin.initialize(registry as unknown as PluginRegistry, store);
         const tab = registry.registerChannelSettingsTab.mock.calls[0][0] as ChannelSettingsTab;
 
+        // Its texts are the app's strings (English here), not hard-coded ones.
+        expect(tab.uiName).toBe('Voice');
+        expect(tab.sections[0].title).toBe('Voice channel');
+        expect(tab.sections[0].settings[0].helpText).toBe('A voice channel works like an always-open call: members join and leave its call whenever they want, and can still chat in the channel. The Calls app must be enabled.');
+        expect(tab.sections[0].settings[0].options).toEqual([
+            {value: 'on', text: 'Voice channel'},
+            {value: 'off', text: 'Regular channel'},
+        ]);
+
         expect(tab.shouldRender!(store.getState(), {id: 'dm', type: 'D', delete_at: 0} as Channel)).toBe(false);
 
         const channel = {id: 'voice', type: 'O', team_id: teamId, delete_at: 0} as Channel;
@@ -138,6 +147,11 @@ describe('Plugin', () => {
         const plugin = new Plugin();
         plugin.initialize(registry as unknown as PluginRegistry, makeStore(state));
         const option = registry.registerChannelTypeOption.mock.calls[0][0];
+
+        // The new channel option's name and description are translated where the host draws them.
+        expect(option.label.props.id).toBe('voice_channels.new_channel.label');
+        expect(option.label.props.defaultMessage).toBe('Voice channel');
+        expect(option.description.props.id).toBe('voice_channels.new_channel.description');
 
         const created = {id: 'newchannel', team_id: teamId} as Channel;
         const createChannel = jest.spyOn(Client4, 'createChannel').mockResolvedValue(created as never);
