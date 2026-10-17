@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Soukromý: pouze pozvaní členové",
-  "voice_channels.new_channel.public": "Veřejný: připojit se může kdokoli z týmu",
   "voice_channels.rhs.not_voice": "Tento kanál není hlasový kanál.",
   "voice_channels.sidebar.participants": "Osoby v hovoru kanálu {channel}",
   "voice_channels.stage.call_window": "Kamery a sdílení obrazovky se zobrazují v okně hovoru.",
-  "voice_channels.stage.calls_unavailable": "Hovory nejsou k dispozici. Požádejte svého administrátora o zapnutí pluginu Hovory.",
   "voice_channels.stage.deafen": "Ztlumit zvuk",
   "voice_channels.stage.empty": "Zatím tu nikdo není",
   "voice_channels.stage.focus": "Zaměřit na {name}",

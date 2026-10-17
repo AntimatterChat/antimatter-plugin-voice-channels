@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Yksityinen: vain kutsutut jäsenet",
-  "voice_channels.new_channel.public": "Julkinen: kaikki tiimin jäsenet voivat liittyä",
   "voice_channels.rhs.not_voice": "Tämä kanava ei ole äänikanava.",
   "voice_channels.sidebar.participants": "Henkilöt puhelussa kanavalla {channel}",
   "voice_channels.stage.call_window": "Kamerat ja näytön jakaminen näkyvät puheluinikkunassa.",
-  "voice_channels.stage.calls_unavailable": "Puhelut eivät ole käytettävissä. Pyydä järjestelmänvalvojaa ottamaan Puhelut-liitännäisen käyttöön.",
   "voice_channels.stage.deafen": "Kuurota",
   "voice_channels.stage.empty": "Tässä ei ole ketään vielä",
   "voice_channels.stage.focus": "Tarkenna kohde {name}",

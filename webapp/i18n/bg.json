@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Частен: само поканени членове",
-  "voice_channels.new_channel.public": "Публичен: всеки от екипа може да се присъедини",
   "voice_channels.rhs.not_voice": "Този канал не е гласов канал.",
   "voice_channels.sidebar.participants": "Хора в обаждането на {channel}",
   "voice_channels.stage.call_window": "Камерите и споделянето на екран се показват в прозореца на обаждането.",
-  "voice_channels.stage.calls_unavailable": "Обажданията са недостъпни. Помолете системния си администратор да активира плъгина за обаждания.",
   "voice_channels.stage.deafen": "Заглушаване",
   "voice_channels.stage.empty": "Все още няма никого тук",
   "voice_channels.stage.focus": "Фокус върху {name}",

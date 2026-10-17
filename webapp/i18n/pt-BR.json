@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privado: apenas membros convidados",
-  "voice_channels.new_channel.public": "Público: qualquer pessoa da equipe pode entrar",
   "voice_channels.rhs.not_voice": "Este canal não é um Canal de Voz.",
   "voice_channels.sidebar.participants": "Pessoas na chamada de {channel}",
   "voice_channels.stage.call_window": "As câmeras e o Compartilhar Tela são exibidos na janela da chamada.",
-  "voice_channels.stage.calls_unavailable": "As chamadas não estão disponíveis. Peça ao seu administrador do sistema para habilitar o plugin de Chamadas.",
   "voice_channels.stage.deafen": "Silenciar áudio",
   "voice_channels.stage.empty": "Ninguém está aqui ainda",
   "voice_channels.stage.focus": "Focar em {name}",

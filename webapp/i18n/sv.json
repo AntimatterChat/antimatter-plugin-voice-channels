@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privat: endast inbjudna medlemmar",
-  "voice_channels.new_channel.public": "Publik: alla i teamet kan gå med",
   "voice_channels.rhs.not_voice": "Detta är inte en röstkanal.",
   "voice_channels.sidebar.participants": "Personer i samtalet i {channel}",
   "voice_channels.stage.call_window": "Kameror och skärmdelning visas i samtalets fönster.",
-  "voice_channels.stage.calls_unavailable": "Samtal är inte tillgängliga. Be din systemadministratör att aktivera pluginnet Samtal.",
   "voice_channels.stage.deafen": "Döv",
   "voice_channels.stage.empty": "Ingen är här ännu",
   "voice_channels.stage.focus": "Fokusera på {name}",

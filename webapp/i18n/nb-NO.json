@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privat: bare inviterte medlemmer",
-  "voice_channels.new_channel.public": "Offentlig: alle i teamet kan bli med",
   "voice_channels.rhs.not_voice": "Denne kanalen er ikke en talekanal.",
   "voice_channels.sidebar.participants": "Personer i samtalen i {channel}",
   "voice_channels.stage.call_window": "Kameraer og skjermdelinger vises i samtalevinduet.",
-  "voice_channels.stage.calls_unavailable": "Samtaler er utilgjengelige. Be systemadministratoren din om å aktivere Samtale-tillegget.",
   "voice_channels.stage.deafen": "Demp lyd",
   "voice_channels.stage.empty": "Ingen er her ennå",
   "voice_channels.stage.focus": "Fokus på {name}",

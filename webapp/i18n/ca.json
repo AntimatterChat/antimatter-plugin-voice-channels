@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privat: només els membres convidats",
-  "voice_channels.new_channel.public": "Públic: qualsevol membre de l'equip pot unir-s'hi",
   "voice_channels.rhs.not_voice": "Aquest canal no és un canal de veu.",
   "voice_channels.sidebar.participants": "Persones a la trucada de {channel}",
   "voice_channels.stage.call_window": "Les càmeres i les comparticions de pantalla es mostren a la finestra de la trucada.",
-  "voice_channels.stage.calls_unavailable": "Les trucades no estan disponibles. Demana al teu administrador del sistema que activi el connector de trucades.",
   "voice_channels.stage.deafen": "Silencia",
   "voice_channels.stage.empty": "Encara no hi ha ningú",
   "voice_channels.stage.focus": "Centra't en {name}",

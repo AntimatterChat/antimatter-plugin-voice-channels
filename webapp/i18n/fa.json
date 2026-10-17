@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "خصوصی: فقط اعضای دعوت‌شده",
-  "voice_channels.new_channel.public": "عمومی: همه اعضای تیم می‌توانند بپیوندند",
   "voice_channels.rhs.not_voice": "این کانال یک کانال صوتی نیست.",
   "voice_channels.sidebar.participants": "افراد حاضر در مکالمه {channel}",
   "voice_channels.stage.call_window": "دوربین‌ها و اشتراک‌گذاری صفحه در پنجره مکالمه نمایش داده می‌شوند.",
-  "voice_channels.stage.calls_unavailable": "مکالمه‌ها در دسترس نیستند. از مدیر سیستم خود بخواهید افزونه مکالمه را فعال کند.",
   "voice_channels.stage.deafen": "بی‌صدا کردن",
   "voice_channels.stage.empty": "هنوز کسی اینجا نیست",
   "voice_channels.stage.focus": "تمرکز روی {name}",

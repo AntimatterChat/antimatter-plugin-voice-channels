@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "தனியார்: அழைக்கப்பட்ட உறுப்பினர்கள் மட்டும்",
-  "voice_channels.new_channel.public": "பொது: குழுவினர் யாரும் சேரலாம்",
   "voice_channels.rhs.not_voice": "இது குரல் சேனல் அல்ல.",
   "voice_channels.sidebar.participants": "{channel} அழைப்பில் உள்ளவர்கள்",
   "voice_channels.stage.call_window": "கேமராக்கள் மற்றும் திரை பகிர்வுகள் அழைப்பு ஜன்னலில் காட்டப்படும்.",
-  "voice_channels.stage.calls_unavailable": "அழைப்புகள் கிடைக்கவில்லை. அழைப்புகள் பிளக்-இனை இயக்க உங்கள் அமைப்பு நிர்வாகியிடம் கேளுங்கள்.",
   "voice_channels.stage.deafen": "காதை மூடு",
   "voice_channels.stage.empty": "இன்னும் யாரும் இல்லை",
   "voice_channels.stage.focus": "{name} மீது கவனம் செலுத்து",

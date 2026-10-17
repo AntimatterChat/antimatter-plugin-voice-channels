@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Peribadi: hanya ahli yang dijemput",
-  "voice_channels.new_channel.public": "Awam: sesiapa sahaja dalam pasukan boleh sertai",
   "voice_channels.rhs.not_voice": "Saluran ini bukan Saluran Suara.",
   "voice_channels.sidebar.participants": "Orang dalam panggilan {channel}",
   "voice_channels.stage.call_window": "Kamera dan kongsi skrin dipaparkan dalam tetingkap panggilan.",
-  "voice_channels.stage.calls_unavailable": "Panggilan tidak tersedia. Minta pentadbir sistem anda untuk membolehkan plugin Panggilan.",
   "voice_channels.stage.deafen": "Bisukan",
   "voice_channels.stage.empty": "Belum ada sesiapa di sini",
   "voice_channels.stage.focus": "Fokus pada {name}",

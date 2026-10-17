@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privát: csak meghívott tagok",
-  "voice_channels.new_channel.public": "Nyílt: a csapat bármelyik tagja csatlakozhat",
   "voice_channels.rhs.not_voice": "Ez nem hangcsatorna.",
   "voice_channels.sidebar.participants": "{channel} hívásában lévő személyek",
   "voice_channels.stage.call_window": "A kamerák és a képernyőmegosztások a hívás ablakában jelennek meg.",
-  "voice_channels.stage.calls_unavailable": "A hívások nem érhetők el. Kérje a rendszeradminisztrátort, hogy engedélyezze a Hívás bővítményt.",
   "voice_channels.stage.deafen": "Némítás",
   "voice_channels.stage.empty": "Még senki nincs itt",
   "voice_channels.stage.focus": "{name} fókuszálása",

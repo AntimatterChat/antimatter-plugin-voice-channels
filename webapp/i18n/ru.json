@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Закрытый: только приглашённые участники",
-  "voice_channels.new_channel.public": "Публичный: присоединиться может любой член команды",
   "voice_channels.rhs.not_voice": "Это не голосовой канал.",
   "voice_channels.sidebar.participants": "Участники звонка в канале {channel}",
   "voice_channels.stage.call_window": "Камеры и демонстрация экрана отображаются в окне звонка.",
-  "voice_channels.stage.calls_unavailable": "Звонки недоступны. Обратитесь к системному администратору, чтобы включить плагин «Звонки».",
   "voice_channels.stage.deafen": "Выключить звук",
   "voice_channels.stage.empty": "Пока никого нет",
   "voice_channels.stage.focus": "Фокус на {name}",

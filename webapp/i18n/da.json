@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Privat: kun inviterede medlemmer",
-  "voice_channels.new_channel.public": "Offentlig: alle i teamet kan deltage",
   "voice_channels.rhs.not_voice": "Denne kanal er ikke en lydkanal.",
   "voice_channels.sidebar.participants": "Personer i opkaldet i {channel}",
   "voice_channels.stage.call_window": "Kameraer og skærmdelinger vises i opkaldsvinduet.",
-  "voice_channels.stage.calls_unavailable": "Opkald er ikke tilgængelige. Bed din systemadministrator om at aktivere Opkald-pluginnet.",
   "voice_channels.stage.deafen": "Lyd af",
   "voice_channels.stage.empty": "Ingen er her endnu",
   "voice_channels.stage.focus": "Fokus på {name}",

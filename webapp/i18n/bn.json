@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "প্রাইভেট: শুধুমাত্র আমন্ত্রিত সদস্য",
-  "voice_channels.new_channel.public": "পাবলিক: টিমের যেকোনো সদস্য যোগ দিতে পারেন",
   "voice_channels.rhs.not_voice": "এই চ্যানেলটি একটি ভয়েস চ্যানেল নয়।",
   "voice_channels.sidebar.participants": "{channel} কলে থাকা মানুষ",
   "voice_channels.stage.call_window": "ক্যামেরা এবং স্ক্রিন শেয়ার কল উইন্ডোতে দেখা যায়।",
-  "voice_channels.stage.calls_unavailable": "কল ব্যবহারযোগ্য নয়। আপনার সিস্টেম অ্যাডমিন থেকে কল প্লাগইন চালু করতে বলুন।",
   "voice_channels.stage.deafen": "শ্রবণ বন্ধ করুন",
   "voice_channels.stage.empty": "এখনও কেউ নেই",
   "voice_channels.stage.focus": "{name}-এর উপর ফোকাস করুন",

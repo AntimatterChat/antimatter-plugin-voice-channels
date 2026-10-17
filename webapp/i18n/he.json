@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "פרטי: רק חברים שנוהלו",
-  "voice_channels.new_channel.public": "ציבורי: כל חבר בצוות יכול להצטרף",
   "voice_channels.rhs.not_voice": "ערוץ זה אינו ערוץ קול.",
   "voice_channels.sidebar.participants": "האנשים בשיחה של {channel}",
   "voice_channels.stage.call_window": "מצלמות ושיתוף מסך מוצגים בחלון השיחה.",
-  "voice_channels.stage.calls_unavailable": "השיחות אינן זמינות. בקש ממנהל המערכת שלך להפעיל את תוסף השיחות.",
   "voice_channels.stage.deafen": "השתקת שמע",
   "voice_channels.stage.empty": "אין כאן עדיין אף אחד",
   "voice_channels.stage.focus": "מיקוד על {name}",

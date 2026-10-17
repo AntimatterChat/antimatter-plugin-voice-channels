@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "निजि: केवल आमंत्रित सदस्य",
-  "voice_channels.new_channel.public": "सार्वजनिक: टीम के कोई भी सदस्य जुड़ सकते हैं",
   "voice_channels.rhs.not_voice": "यह चैनल वॉइस चैनल नहीं है।",
   "voice_channels.sidebar.participants": "{channel} की कॉल में लोग",
   "voice_channels.stage.call_window": "कैमरे और स्क्रीन शेयर कॉल विंडो में दिखाए जाते हैं।",
-  "voice_channels.stage.calls_unavailable": "कॉल उपलब्ध नहीं हैं। कॉल प्लगइन सक्षम करने के लिए अपने सिस्टम एडमिन से पूछें।",
   "voice_channels.stage.deafen": "बहरा करें",
   "voice_channels.stage.empty": "अभी कोई नहीं है",
   "voice_channels.stage.focus": "{name} पर फोकस करें",

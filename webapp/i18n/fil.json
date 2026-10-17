@@ -1,10 +1,8 @@
 {
   "voice_channels.new_channel.private": "Pribado: mga miyembro na imbitado lamang",
-  "voice_channels.new_channel.public": "Pampubliko: maaaring sumali ang sinumang miyembro ng team",
   "voice_channels.rhs.not_voice": "Hindi ito isang voice channel.",
   "voice_channels.sidebar.participants": "Mga tao sa tawag ng {channel}",
   "voice_channels.stage.call_window": "Ipinapakita sa call window ang mga camera at screen share.",
-  "voice_channels.stage.calls_unavailable": "Hindi available ang mga tawag. Magtanong sa iyong system administrator upang i-enable ang Calls plugin.",
   "voice_channels.stage.deafen": "I-deafen",
   "voice_channels.stage.empty": "Wala pa rito",
   "voice_channels.stage.focus": "Pokus sa {name}",
