@@ -174,7 +174,7 @@ export default function VoicePanel({channel, messagesVisible, setMessagesVisible
                 <p className='VoicePanel__notice'>
                     <FormattedMessage
                         id='voice_channels.stage.calls_unavailable'
-                        defaultMessage='Calls are unavailable. Ask your system administrator to enable the Calls plugin.'
+                        defaultMessage='Calls are unavailable. Ask your system administrator to enable the Calls app.'
                     />
                 </p>
             )}

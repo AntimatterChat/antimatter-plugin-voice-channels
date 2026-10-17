@@ -39,7 +39,7 @@ export default function VoiceChannelPrivacy({formState}: {formState?: NewChannel
                 />
                 <FormattedMessage
                     id='voice_channels.new_channel.public'
-                    defaultMessage='Public: anyone on the team can join'
+                    defaultMessage='Public: anyone in the community can join'
                 />
             </label>
             <label className='VoiceChannelPrivacy__option'>
