@@ -183,7 +183,7 @@ export default class Plugin implements PluginClass {
         registry.registerChannelTypeOption?.({
             label: 'Voice channel',
             description: 'An always-open call that members can hop in and out of',
-            icon: <i className='icon icon-volume-high'/>,
+            icon: isFusionUI() ? <svg className='am-ic'><use href='#am-i-speaker'/></svg> : <i className='icon icon-volume-high'/>,
             isAvailable: isCallsAvailable,
             extraContent: VoiceChannelPrivacy,
             onCreate: async (form) => {

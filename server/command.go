@@ -85,7 +85,7 @@ func commandErrorText(err error) string {
 	case 400, 403:
 		return "Couldn't change this channel: " + err.Error() + "."
 	case 503:
-		return "Couldn't change this channel: calls are unavailable. Ask your system administrator to enable the Calls plugin."
+		return "Couldn't change this channel: calls are unavailable. Ask your system administrator to enable the Calls app."
 	default:
 		return "Something went wrong, please try again."
 	}
