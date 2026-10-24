@@ -1,7 +1,7 @@
 {
     "id": "com.antimatterchat.voice-channels",
     "name": "Voice Channels",
-    "description": "Turns channels into always-open voice rooms, using the Calls plugin for audio, video and screen sharing.",
+    "description": "Sets up Voice channels (always-open voice rooms), using the Calls plugin for audio, video and screen sharing.",
     "homepage_url": "https://github.com/antimatterchat/antimatter-plugin-voice-channels",
     "support_url": "https://github.com/antimatterchat/antimatter-plugin-voice-channels/issues",
     "icon_path": "assets/icon.svg",

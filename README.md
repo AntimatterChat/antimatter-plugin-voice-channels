@@ -10,18 +10,18 @@ and configure.
 
 ## Features
 
-- **Voice channels.** Any public or private channel can be made a voice channel by people who can
-  manage its properties: from the new **Voice** tab of the channel settings, as a **Voice channel**
-  type in the new channel modal, or with the `/voice on|off` slash command (works from every client).
-  Voice channels get a speaker icon in the sidebar.
+- **Voice channels.** Voice is a native Antimatter channel type, picked once when the channel is
+  created (as a **Voice channel** type in the new channel modal, or through the API's `am_preset`),
+  and fixed afterwards: it can't be turned on or off later. Voice channels get a speaker icon in the
+  sidebar.
 - **Join by opening.** Opening a voice channel from the sidebar joins its call (can be turned off).
   Joining another voice channel leaves the previous one; other calls, e.g. a direct message call,
   are only left when using the channel's **Join voice** button.
 - **Who's in, visible to all.** The people in a voice channel's call are listed below the channel in
   the sidebar, for every member of the channel, with who is speaking, muted, deafened, sharing their
   screen, using their camera or raising their hand.
-- **Stage.** A voice channel opens on its stage: a tile for every participant, their camera when
-  it's on, the screen share, a focus mode and full screen for videos, and a toggle to show the
+- **Call view.** A voice channel opens on its call view: a tile for every participant, their camera
+  when it's on, the screen share, a focus mode and full screen for videos, and a toggle to show the
   channel's messages.
 - **Group video.** Participants of voice channels can turn on their camera (a Calls feature that is
   otherwise limited to direct messages).
@@ -40,8 +40,8 @@ channel is open.
 - The **Calls plugin from the Antimatter fork, branch `voice-channels`**
   (https://github.com/antimatterchat/antimatter-plugin-calls). It lets other plugins manage the calls
   settings of a channel and adds the channel settings voice channels rely on. With another Calls
-  version, voice channels can't be created (the API answers 503 and the `/voice` command says calls
-  are unavailable).
+  version, a newly created voice channel's call isn't set up until Calls becomes available (the
+  plugin keeps retrying).
 - To allow video in voice channels, **video must be enabled in the Calls plugin settings**
   (System Console > Plugins > Calls > Enable video).
 
@@ -56,9 +56,10 @@ The feature is enabled and disabled like any plugin:
   replaces the whole map of plugin states, so it has to list every plugin to enable, e.g.
   `MM_PLUGINSETTINGS_PLUGINSTATES='{"com.mattermost.calls":{"Enable":true},"com.antimatterchat.voice-channels":{"Enable":true}}'`.
 
-When the plugin is disabled, voice channels behave as regular channels that keep their calls
-settings (calls enabled, no "call started" posts, video allowed); they become voice channels again
-when the plugin is enabled.
+Voice is a channel type now (see "Voice channels" above), kept by the server independently of this
+plugin. While the plugin is disabled, voice channels keep their type and their calls settings; the
+webapp shows their chat, with the speaker icon, instead of the call view, until the plugin is
+enabled again.
 
 ### Settings
 
@@ -66,7 +67,7 @@ System Console > Plugins > Voice Channels:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| Join when opening a voice channel (`AutoJoin`) | true | Opening a voice channel from the sidebar joins its call. When false, users join with the stage's **Join voice** button. |
+| Join when opening a voice channel (`AutoJoin`) | true | Opening a voice channel from the sidebar joins its call. When false, users join with the call view's **Join voice** button. |
 | Allow video in voice channels (`AllowVideo`) | true | Participants can turn on their camera. Video must also be enabled in the Calls plugin. |
 
 They can also be set in `PluginSettings.Plugins["com.antimatterchat.voice-channels"]` (keys in
@@ -79,14 +80,19 @@ See the [user guide](https://antimatter.chat/docs/users/calls.html#voice-channel
 
 ### Server
 
-- A voice channel is a `vc_<channel id>` key in the plugin's KV store. The plugin's own data never
-  goes into the Calls plugin or the channel.
-- Making a channel a voice channel configures its calls through inter-plugin requests to the Calls
+- Voice is an Antimatter channel type now: the server stores it and refuses to create a voice
+  channel unless this plugin is active. The plugin never decides whether a channel is voice; it
+  only sets up and keeps up its calls.
+- The plugin mirrors which channels are voice channels in its own KV store (`vc_<channel id>`), so
+  its background sync doesn't have to scan every channel; the mirror is written when a voice
+  channel is created (`ChannelHasBeenCreated`) and again on first join if that hook hasn't run yet,
+  and pruned once the channel is gone. It plays no other part: a channel's actual voice state always
+  comes from its own props.
+- Setting up a voice channel's calls configures it through inter-plugin requests to the Calls
   plugin: calls are enabled and the channel gets these Calls channel props:
   `broadcast_session_state` (send mute/voice/screen/video/hand events to the whole channel, so that
   members outside the call see who's talking), `disable_call_post` (no "call started" post) and,
-  unless `AllowVideo` is off, `enable_video`. Making it a regular channel again removes the props and
-  leaves calls enabled.
+  unless `AllowVideo` is off, `enable_video`.
 - The plugin sets these up again when it's activated and when `AllowVideo` changes, retrying while
   the Calls plugin is unavailable (e.g. activated later), and forgets voice channels whose channel
   was deleted. Archived voice channels are hidden and come back when unarchived.
@@ -100,12 +106,11 @@ REST API, under `/plugins/com.antimatterchat.voice-channels/api/v1` (user sessio
 | --- | --- | --- |
 | `GET /config` | | `{"auto_join": bool, "allow_video": bool}` |
 | `GET /channels` | | the voice channels the user is a member of: `[{"channel_id", "team_id", "voice": true, "deafened_sessions": {"<session id>": "<user id>"}}]` |
-| `GET /channels/{channel_id}` | | the same for one channel the user can read (`voice` may be false) |
-| `PUT /channels/{channel_id}` | `{"voice": bool}` | the channel's state. Needs the permission to manage the channel's properties (public or private); `400` for other channel types or archived channels, `503` when calls are unavailable. |
+| `GET /channels/{channel_id}` | | the same for one channel the user can read (`voice` comes from the channel's own type) |
+| `PUT /channels/{channel_id}` | | `400`: voice can no longer be turned on or off, it's set when the channel is created |
 | `PUT /channels/{channel_id}/sessions/{session_id}/deafened` | `{"deafened": bool}` | `{"status": "OK"}` |
 
-WebSocket events, sent to the channel's members: `custom_com.antimatterchat.voice-channels_voice_channel_updated`
-(`{channel_id, team_id, voice}`) and `custom_com.antimatterchat.voice-channels_session_deafened`
+WebSocket events, sent to the channel's members: `custom_com.antimatterchat.voice-channels_session_deafened`
 (`{channel_id, session_id, user_id, deafened}`).
 
 ### Webapp
@@ -121,14 +126,13 @@ WebSocket events, sent to the channel's members: `custom_com.antimatterchat.voic
 | Hook | Used for | Without it |
 | --- | --- | --- |
 | `registerSidebarChannelFooterComponent` (Antimatter) | participants below the channel | avatars next to the channel name |
-| `registerChannelViewPanel` (Antimatter) | the stage in the channel view | the stage in the right-hand sidebar, from a channel header button |
+| `registerChannelViewPanel` (Antimatter) | the call view in the channel view | the call view in the right-hand sidebar, from a channel header button |
 | `registerChannelIconOverride` | speaker icon | regular channel icon |
-| `registerChannelSettingsTab` | Voice tab of the channel settings | `/voice` command |
 | `registerChannelTypeOption` | Voice channel type in the new channel modal | `/voice` command |
 | `registerSidebarChannelLinkLabelComponent` | join when opening from the sidebar | |
 
-In the desktop app, calls run in a separate window: the stage then shows the participants without
-their videos and points to the call window, and deafen isn't available.
+In the desktop app, calls run in a separate window: the call view then shows the participants
+without their videos and points to the call window, and deafen isn't available.
 
 ## Compared to the original built-in voice channels
 
@@ -137,18 +141,17 @@ This plugin replaces an earlier built-in implementation that had its own SFU. Di
 | Built-in design | This plugin |
 | --- | --- |
 | In-process pion SFU, own signalling, UDP/TCP ports, `VoiceSettings` | The Calls plugin (integrated SFU or rtcd), configured in the Calls settings |
-| `Channels.Props` column (migration) with `props.voice` | Plugin KV store, no server or schema change |
+| `Channels.Props` column (migration) with `props.voice` | A native Antimatter channel type (`props.am_type`), fixed at creation |
 | `EnableVoiceChannels` switch | Enabling or disabling the plugin |
-| Voice control bar at the bottom of the sidebar | The Calls widget (same place in the browser, plus devices, reactions, raise hand, pop-out, host controls) and the stage's Deafen button |
-| Deafen in the control bar | Deafen on the stage; unmuting from the widget undeafens |
+| Voice control bar at the bottom of the sidebar | The Calls widget (same place in the browser, plus devices, reactions, raise hand, pop-out, host controls) and the call view's Deafen button |
+| Deafen in the control bar | Deafen on the call view; unmuting from the widget undeafens |
 | Speaking indicators computed from audio levels by every client | Voice activity from Calls, sent to the whole channel |
 | Joining a voice channel ends the session elsewhere, across devices | One call per client, handled by Calls; another voice channel's call is left when joining |
 | Group video and screen sharing | Same; one screen share at a time (a Calls limit) |
-| Voice toggle inside the channel settings info tab and the new channel modal | A Voice tab in the channel settings and a Voice channel type in the new channel modal |
+| Voice toggle inside the channel settings info tab and the new channel modal | Picked once, as the Voice channel type in the new channel modal; fixed afterwards |
 
-Not ported: the per-channel `voice` channel prop in the channel API (voice channels are known
-through this plugin's API instead) and the built-in `VoiceSettings` (ports, ICE servers), which
-are the Calls plugin's settings.
+Not ported: the built-in `VoiceSettings` (ports, ICE servers), which are the Calls plugin's
+settings.
 
 ## Development
 
