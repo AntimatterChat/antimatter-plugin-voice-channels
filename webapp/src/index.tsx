@@ -162,7 +162,7 @@ export default class Plugin implements PluginClass {
                         // the server sets up the channel's type and settings from it before this app's
                         // ChannelHasBeenCreated hook runs.
                         props: {am_preset: 'voice_talk'},
-                    } as Channel);
+                    });
                     return {status: 'created', channel};
                 } catch (err) {
                     return {status: 'error', message: (err as Error).message};
