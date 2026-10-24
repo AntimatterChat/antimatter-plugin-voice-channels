@@ -40,8 +40,7 @@ func TestAPIGetConfig(t *testing.T) {
 // app's own toggle endpoint has nothing left to do and always answers 400 (§3.4 of the channel types design).
 func TestAPIUpdateChannel(t *testing.T) {
 	userID := model.NewId()
-	channel := &model.Channel{Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypeOpen}
-	path := "/api/v1/channels/" + channel.Id
+	path := "/api/v1/channels/" + model.NewId()
 
 	for _, body := range []any{map[string]any{"voice": true}, map[string]any{"voice": false}, nil} {
 		e := newTestEnv(t)
