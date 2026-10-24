@@ -80,6 +80,28 @@ func TestSyncCallsSettings(t *testing.T) {
 	})
 }
 
+// TestVoiceChannelMirrorLifecycle covers B6: the hook writes the KV mirror, and the sync loop prunes it once the
+// channel is gone. Nothing else changes the mirror now: there's no more turning voice on or off.
+func TestVoiceChannelMirrorLifecycle(t *testing.T) {
+	e := newTestEnv(t)
+	channel := &model.Channel{
+		Id: model.NewId(), TeamId: model.NewId(), CreatorId: model.NewId(), Type: model.ChannelTypeOpen,
+		Props: map[string]any{amChannelTypeProp: amChannelTypeVoice},
+	}
+
+	e.p.ChannelHasBeenCreated(nil, channel)
+	vc, err := e.p.store.GetVoiceChannel(channel.Id)
+	require.NoError(t, err)
+	require.NotNil(t, vc, "the hook wrote the mirror")
+
+	e.api.On("GetChannel", channel.Id).Return(nil, model.NewAppError("GetChannel", "not_found", nil, "", http.StatusNotFound))
+	require.NoError(t, e.p.syncCallsSettings())
+
+	vc, err = e.p.store.GetVoiceChannel(channel.Id)
+	require.NoError(t, err)
+	require.Nil(t, vc, "the sync loop pruned the deleted channel")
+}
+
 func TestConfigurationChangeTriggersSync(t *testing.T) {
 	e := newTestEnv(t)
 	e.p.syncTrigger = make(chan struct{}, 1)

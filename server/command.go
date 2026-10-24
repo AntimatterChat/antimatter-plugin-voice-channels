@@ -12,23 +12,19 @@ import (
 
 const voiceCommandTrigger = "voice"
 
-const voiceCommandHelp = "* `/voice on` - Make this channel a voice channel\n" +
-	"* `/voice off` - Make this voice channel a regular channel\n" +
-	"* `/voice` - Tell whether this channel is a voice channel"
+// voiceCommandHelp is the command's help text. Voice is now a native channel type (Antimatter channel types, the
+// Talk and Stage presets), fixed when the channel is created: there's no longer an "on" or "off" to set here,
+// only the channel's own state to tell.
+const voiceCommandHelp = "* `/voice` - Tell whether this channel is a voice channel"
 
 func voiceCommand() *model.Command {
-	autocomplete := model.NewAutocompleteData(voiceCommandTrigger, "[on|off]", "Manage the voice channel setting of this channel")
-	autocomplete.AddCommand(model.NewAutocompleteData("on", "", "Make this channel a voice channel"))
-	autocomplete.AddCommand(model.NewAutocompleteData("off", "", "Make this voice channel a regular channel"))
-
 	return &model.Command{
 		Trigger:          voiceCommandTrigger,
 		DisplayName:      "Voice",
-		Description:      "Manage voice channels",
+		Description:      "Tell whether this channel is a voice channel",
 		AutoComplete:     true,
-		AutoCompleteDesc: "Manage the voice channel setting of this channel",
-		AutoCompleteHint: "[on|off]",
-		AutocompleteData: autocomplete,
+		AutoCompleteDesc: "Tell whether this channel is a voice channel",
+		AutocompleteData: model.NewAutocompleteData(voiceCommandTrigger, "", "Tell whether this channel is a voice channel"),
 	}
 }
 
@@ -64,29 +60,7 @@ func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*mo
 			return ephemeralResponse("This channel is a voice channel."), nil
 		}
 		return ephemeralResponse("This channel is a regular channel."), nil
-	case "on", "off":
-		if _, err := p.setVoiceChannel(args.UserId, channel, action == "on"); err != nil {
-			if statusFor(err) >= 500 {
-				p.API.LogError("Failed to change a voice channel", "channel_id", channel.Id, "err", err.Error())
-			}
-			return ephemeralResponse(commandErrorText(err)), nil
-		}
-		if action == "on" {
-			return ephemeralResponse("This channel is now a voice channel."), nil
-		}
-		return ephemeralResponse("This channel is now a regular channel."), nil
 	default:
 		return ephemeralResponse(voiceCommandHelp), nil
-	}
-}
-
-func commandErrorText(err error) string {
-	switch statusFor(err) {
-	case 400, 403:
-		return "Couldn't change this channel: " + err.Error() + "."
-	case 503:
-		return "Couldn't change this channel: calls are unavailable. Ask your system administrator to enable the Calls app."
-	default:
-		return "Something went wrong, please try again."
 	}
 }

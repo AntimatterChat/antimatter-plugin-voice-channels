@@ -118,27 +118,11 @@ func (p *Plugin) handleGetChannel(w http.ResponseWriter, r *http.Request) {
 	p.writeJSON(w, state)
 }
 
-func (p *Plugin) handleUpdateChannel(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Voice *bool `json:"voice"`
-	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, requestBodyMaxSizeBytes)).Decode(&body); err != nil || body.Voice == nil {
-		p.writeError(w, newAPIError(http.StatusBadRequest, `invalid request body, expected {"voice": true|false}`))
-		return
-	}
-
-	channel, err := p.readableChannel(r)
-	if err != nil {
-		p.writeError(w, err)
-		return
-	}
-
-	state, err := p.setVoiceChannel(r.Header.Get("Mattermost-User-Id"), channel, *body.Voice)
-	if err != nil {
-		p.writeError(w, err)
-		return
-	}
-	p.writeJSON(w, state)
+// handleUpdateChannel used to turn a channel into a voice channel and back. Voice is now a native channel type
+// (Antimatter channel types, the Talk and Stage presets), fixed when the channel is created, so there's nothing
+// left to toggle here: the endpoint stays, answering 400, for any client still calling it.
+func (p *Plugin) handleUpdateChannel(w http.ResponseWriter, _ *http.Request) {
+	p.writeError(w, newAPIError(http.StatusBadRequest, "voice can no longer be turned on or off: it's set when the channel is created"))
 }
 
 func (p *Plugin) handleSetDeafened(w http.ResponseWriter, r *http.Request) {

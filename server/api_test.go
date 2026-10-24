@@ -36,116 +36,29 @@ func TestAPIGetConfig(t *testing.T) {
 	require.Equal(t, ClientConfig{AutoJoin: false, AllowVideo: true}, decode[ClientConfig](t, w.Body.Bytes()))
 }
 
+// TestAPIUpdateChannel covers B6: voice is now a native channel type, fixed when the channel is created, so the
+// app's own toggle endpoint has nothing left to do and always answers 400 (§3.4 of the channel types design).
 func TestAPIUpdateChannel(t *testing.T) {
 	userID := model.NewId()
 	channel := &model.Channel{Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypeOpen}
 	path := "/api/v1/channels/" + channel.Id
 
-	setup := func(t *testing.T, ch *model.Channel) *testEnv {
+	for _, body := range []any{map[string]any{"voice": true}, map[string]any{"voice": false}, nil} {
 		e := newTestEnv(t)
-		e.api.On("HasPermissionToChannel", userID, ch.Id, model.PermissionReadChannel).Return(true).Maybe()
-		e.api.On("GetChannel", ch.Id).Return(ch, nil).Maybe()
-		return e
+		w := e.request(t, userID, http.MethodPut, path, body)
+		require.Equal(t, http.StatusBadRequest, w.Code, "%v", body)
+		require.Contains(t, w.Body.String(), "can no longer be turned on or off")
 	}
 
-	t.Run("turn on and off", func(t *testing.T) {
-		e := setup(t, channel)
-		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionManagePublicChannelProperties).Return(true)
-		e.api.On("PublishWebSocketEvent", wsEventVoiceChannelUpdated, map[string]any{
-			"channel_id": channel.Id, "team_id": channel.TeamId, "voice": true,
-		}, &model.WebsocketBroadcast{ChannelId: channel.Id}).Once()
-
-		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
-		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
-		require.Equal(t, VoiceChannelState{ChannelID: channel.Id, TeamID: channel.TeamId, Voice: true, DeafenedSessions: map[string]string{}},
-			decode[VoiceChannelState](t, w.Body.Bytes()))
-
-		vc, err := e.p.store.GetVoiceChannel(channel.Id)
-		require.NoError(t, err)
-		require.Equal(t, userID, vc.EnabledBy)
-		require.Equal(t, channel.TeamId, vc.TeamID)
-		require.True(t, e.calls.channel(channel.Id).Enabled)
-		require.Equal(t, true, e.calls.channel(channel.Id).Props[callsPropBroadcastSessionState])
-
-		e.api.On("PublishWebSocketEvent", wsEventVoiceChannelUpdated, map[string]any{
-			"channel_id": channel.Id, "team_id": channel.TeamId, "voice": false,
-		}, &model.WebsocketBroadcast{ChannelId: channel.Id}).Once()
-
-		w = e.request(t, userID, http.MethodPut, path, map[string]any{"voice": false})
-		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
-		require.False(t, decode[VoiceChannelState](t, w.Body.Bytes()).Voice)
-
-		vc, err = e.p.store.GetVoiceChannel(channel.Id)
-		require.NoError(t, err)
-		require.Nil(t, vc)
-		require.Empty(t, e.calls.channel(channel.Id).Props)
-	})
-
-	t.Run("private channels need the private permission", func(t *testing.T) {
-		private := &model.Channel{Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypePrivate}
-		e := setup(t, private)
-		e.api.On("HasPermissionToChannel", userID, private.Id, model.PermissionManagePrivateChannelProperties).Return(false)
-
-		w := e.request(t, userID, http.MethodPut, "/api/v1/channels/"+private.Id, map[string]any{"voice": true})
-		require.Equal(t, http.StatusForbidden, w.Code)
-		vc, err := e.p.store.GetVoiceChannel(private.Id)
-		require.NoError(t, err)
-		require.Nil(t, vc)
-		require.Nil(t, e.calls.channel(private.Id))
-	})
-
-	t.Run("only public and private channels", func(t *testing.T) {
-		dm := &model.Channel{Id: model.NewId(), Type: model.ChannelTypeDirect}
-		e := setup(t, dm)
-		w := e.request(t, userID, http.MethodPut, "/api/v1/channels/"+dm.Id, map[string]any{"voice": true})
-		require.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	t.Run("not archived channels", func(t *testing.T) {
-		archived := &model.Channel{Id: model.NewId(), Type: model.ChannelTypeOpen, DeleteAt: 1}
-		e := setup(t, archived)
-		w := e.request(t, userID, http.MethodPut, "/api/v1/channels/"+archived.Id, map[string]any{"voice": true})
-		require.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	t.Run("calls unavailable", func(t *testing.T) {
-		e := setup(t, channel)
-		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionManagePublicChannelProperties).Return(true)
-		e.calls.unavailable = true
-
-		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
-		require.Equal(t, http.StatusServiceUnavailable, w.Code)
-		vc, err := e.p.store.GetVoiceChannel(channel.Id)
-		require.NoError(t, err)
-		require.Nil(t, vc)
-	})
-
-	t.Run("internal errors don't reach the user", func(t *testing.T) {
-		e := setup(t, channel)
-		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionManagePublicChannelProperties).Return(true)
-		e.calls.failure = http.StatusInternalServerError
-
-		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
-		require.Equal(t, http.StatusInternalServerError, w.Code)
-		require.NotContains(t, w.Body.String(), "calls internal details")
-	})
-
-	t.Run("no access to the channel", func(t *testing.T) {
+	t.Run("still needs a user, like every other route", func(t *testing.T) {
 		e := newTestEnv(t)
-		e.api.On("GetChannel", channel.Id).Return(channel, nil)
-		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
-		e.api.On("HasPermissionToTeam", userID, channel.TeamId, model.PermissionReadPublicChannel).Return(false).Maybe()
-		w := e.request(t, userID, http.MethodPut, path, map[string]any{"voice": true})
-		require.Equal(t, http.StatusForbidden, w.Code)
-	})
-
-	t.Run("invalid body", func(t *testing.T) {
-		e := newTestEnv(t)
-		w := e.request(t, userID, http.MethodPut, path, map[string]any{"enabled": true})
-		require.Equal(t, http.StatusBadRequest, w.Code)
+		w := e.request(t, "", http.MethodPut, path, map[string]any{"voice": true})
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
 
+// TestAPIGetChannel also covers B6: Voice comes from the channel's own props (channel.Props["am_type"]), the
+// server's channel type, not the KV mirror; see getVoiceChannelState in voice.go.
 func TestAPIGetChannel(t *testing.T) {
 	userID := model.NewId()
 	channel := &model.Channel{Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypeOpen}
@@ -160,7 +73,9 @@ func TestAPIGetChannel(t *testing.T) {
 	require.Equal(t, VoiceChannelState{ChannelID: channel.Id, TeamID: channel.TeamId, DeafenedSessions: map[string]string{}},
 		decode[VoiceChannelState](t, w.Body.Bytes()))
 
-	require.NoError(t, e.p.store.SaveVoiceChannel(&VoiceChannel{ChannelID: channel.Id, TeamID: channel.TeamId}))
+	// The server made it a voice channel (its props say so); the GetChannel mock returns the same channel
+	// pointer, so mutating its props is reflected in the next request.
+	channel.Props = map[string]any{amChannelTypeProp: amChannelTypeVoice}
 	sessionID, otherUserID := model.NewId(), model.NewId()
 	_, err := e.p.store.SetSessionDeafened(channel.Id, sessionID, otherUserID, true, time.Now())
 	require.NoError(t, err)
@@ -181,10 +96,10 @@ func TestAPIGetChannel(t *testing.T) {
 
 	t.Run("a public channel of the user's team, not joined", func(t *testing.T) {
 		e := newTestEnv(t)
-		e.api.On("GetChannel", channel.Id).Return(channel, nil)
+		voice := &model.Channel{Id: channel.Id, TeamId: channel.TeamId, Type: model.ChannelTypeOpen, Props: map[string]any{amChannelTypeProp: amChannelTypeVoice}}
+		e.api.On("GetChannel", channel.Id).Return(voice, nil)
 		e.api.On("HasPermissionToChannel", userID, channel.Id, model.PermissionReadChannel).Return(false)
 		e.api.On("HasPermissionToTeam", userID, channel.TeamId, model.PermissionReadPublicChannel).Return(true)
-		require.NoError(t, e.p.store.SaveVoiceChannel(&VoiceChannel{ChannelID: channel.Id, TeamID: channel.TeamId}))
 		w := e.request(t, userID, http.MethodGet, path, nil)
 		require.Equal(t, http.StatusOK, w.Code)
 		require.True(t, decode[VoiceChannelState](t, w.Body.Bytes()).Voice)
@@ -241,7 +156,10 @@ func TestAPIListChannels(t *testing.T) {
 
 func TestAPISetDeafened(t *testing.T) {
 	userID, otherUserID := model.NewId(), model.NewId()
-	channel := &model.Channel{Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypeOpen}
+	channel := &model.Channel{
+		Id: model.NewId(), TeamId: model.NewId(), Type: model.ChannelTypeOpen,
+		Props: map[string]any{amChannelTypeProp: amChannelTypeVoice},
+	}
 	sessionID, otherSessionID := model.NewId(), model.NewId()
 	path := func(sessionID string) string {
 		return "/api/v1/channels/" + channel.Id + "/sessions/" + sessionID + "/deafened"
@@ -251,7 +169,6 @@ func TestAPISetDeafened(t *testing.T) {
 		e := newTestEnv(t)
 		e.api.On("HasPermissionToChannel", mock.Anything, channel.Id, model.PermissionReadChannel).Return(true)
 		e.api.On("GetChannel", channel.Id).Return(channel, nil)
-		require.NoError(t, e.p.store.SaveVoiceChannel(&VoiceChannel{ChannelID: channel.Id, TeamID: channel.TeamId}))
 		e.calls.setCall(channel.Id, map[string]string{sessionID: userID, otherSessionID: otherUserID})
 		return e
 	}
@@ -287,8 +204,11 @@ func TestAPISetDeafened(t *testing.T) {
 	})
 
 	t.Run("only voice channels", func(t *testing.T) {
-		e := setup(t)
-		require.NoError(t, e.p.store.DeleteVoiceChannel(channel.Id))
+		e := newTestEnv(t)
+		regular := &model.Channel{Id: channel.Id, TeamId: channel.TeamId, Type: model.ChannelTypeOpen}
+		e.api.On("HasPermissionToChannel", mock.Anything, channel.Id, model.PermissionReadChannel).Return(true)
+		e.api.On("GetChannel", channel.Id).Return(regular, nil)
+		e.calls.setCall(channel.Id, map[string]string{sessionID: userID})
 		w := e.request(t, userID, http.MethodPut, path(sessionID), map[string]any{"deafened": true})
 		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
