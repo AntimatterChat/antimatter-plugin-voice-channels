@@ -13,33 +13,8 @@ export const messages = defineMessages({
     you: {id: 'voice_channels.you', defaultMessage: '{name} (you)'},
     participants: {id: 'voice_channels.sidebar.participants', defaultMessage: 'People in the call of {channel}'},
 
-    // What the app registers with the host: the channel settings tab, the new channel option, and the classic UI's
-    // right-hand panel and channel header button.
-    settingsTab: {
-        id: 'voice_channels.settings.tab',
-        defaultMessage: 'Voice',
-        description: 'Name of the tab of the channel settings where a channel is made a voice channel or a regular one.',
-    },
-    settingsSection: {
-        id: 'voice_channels.settings.section',
-        defaultMessage: 'Voice channel',
-        description: 'Title of the section of the channel settings that turns the channel into a voice channel or back.',
-    },
-    settingsHelp: {
-        id: 'voice_channels.settings.help',
-        defaultMessage: 'A voice channel works like an always-open call: members join and leave its call whenever they want, and can still chat in the channel. The Calls app must be enabled.',
-        description: 'Help under the voice channel setting of a channel. "Calls" is the name of the app that runs the calls.',
-    },
-    settingsOn: {
-        id: 'voice_channels.settings.on',
-        defaultMessage: 'Voice channel',
-        description: 'Choice of the voice channel setting: the channel is a voice channel (an always-open call).',
-    },
-    settingsOff: {
-        id: 'voice_channels.settings.off',
-        defaultMessage: 'Regular channel',
-        description: 'Choice of the voice channel setting: the channel is an ordinary text channel.',
-    },
+    // What the app registers with the host: the new channel option (voice is a native channel type now, picked
+    // once at creation: see index.tsx), and the classic UI's right-hand panel and channel header button.
     newChannelLabel: {
         id: 'voice_channels.new_channel.label',
         defaultMessage: 'Voice channel',

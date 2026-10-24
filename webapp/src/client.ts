@@ -65,10 +65,6 @@ export function getVoiceChannel(channelId: string) {
     return request<VoiceChannelState>('GET', `/channels/${channelId}`);
 }
 
-export function updateVoiceChannel(channelId: string, voice: boolean) {
-    return request<VoiceChannelState>('PUT', `/channels/${channelId}`, {voice});
-}
-
 export function setSessionDeafened(channelId: string, sessionId: string, deafened: boolean) {
     return request<unknown>('PUT', `/channels/${channelId}/sessions/${sessionId}/deafened`, {deafened});
 }

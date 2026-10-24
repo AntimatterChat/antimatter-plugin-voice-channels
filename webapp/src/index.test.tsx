@@ -7,14 +7,12 @@ import {Client4} from 'mattermost-redux/client';
 
 import {makeState, makeStore, teamId} from '../tests/utils';
 
-import * as client from './client';
-import type {ChannelSettingsTab, PluginClass, PluginRegistry} from './types/host';
+import type {PluginClass, PluginRegistry} from './types/host';
 
 jest.mock('./client', () => ({
     getConfig: jest.fn(() => Promise.resolve({auto_join: true, allow_video: true})),
     getVoiceChannels: jest.fn(() => Promise.resolve([])),
     getVoiceChannel: jest.fn((channelId: string) => Promise.resolve({channel_id: channelId, team_id: 'team', voice: false, deafened_sessions: {}})),
-    updateVoiceChannel: jest.fn((channelId: string, voice: boolean) => Promise.resolve({channel_id: channelId, team_id: 'team', voice, deafened_sessions: {}})),
     setSessionDeafened: jest.fn(),
 }));
 
@@ -39,7 +37,6 @@ function makeRegistry(withHooks: boolean) {
             registerSidebarChannelFooterComponent: jest.fn(),
             registerChannelViewPanel: jest.fn(),
             registerChannelIconOverride: jest.fn(),
-            registerChannelSettingsTab: jest.fn(),
             registerChannelTypeOption: jest.fn(),
         });
     }
@@ -62,7 +59,6 @@ describe('Plugin', () => {
         expect(registry.registerSidebarChannelLinkLabelComponent).toHaveBeenCalled();
         expect(registry.registerChannelViewPanel).toHaveBeenCalled();
         expect(registry.registerChannelIconOverride).toHaveBeenCalledWith(expect.any(Function), 'volume-high');
-        expect(registry.registerChannelSettingsTab).toHaveBeenCalled();
         expect(registry.registerChannelTypeOption).toHaveBeenCalled();
         expect(registry.registerRightHandSidebarComponent).not.toHaveBeenCalled();
         plugin.uninitialize?.();
@@ -95,7 +91,6 @@ describe('Plugin', () => {
             // The rest stays
             expect(registry.registerReducer).toHaveBeenCalled();
             expect(registry.registerChannelIconOverride).toHaveBeenCalledWith(expect.any(Function), 'volume-high');
-            expect(registry.registerChannelSettingsTab).toHaveBeenCalled();
             expect(registry.registerChannelTypeOption).toHaveBeenCalled();
             plugin.uninitialize?.();
         } finally {
@@ -117,32 +112,7 @@ describe('Plugin', () => {
         window.removeEventListener('antimatter-voice-channels:ready', onReady);
     });
 
-    test('channel settings tab', async () => {
-        const registry = makeRegistry(true);
-        const store = makeStore(state);
-        const plugin = new Plugin();
-        plugin.initialize(registry as unknown as PluginRegistry, store);
-        const tab = registry.registerChannelSettingsTab.mock.calls[0][0] as ChannelSettingsTab;
-
-        // Its texts are the app's strings (English here), not hard-coded ones.
-        expect(tab.uiName).toBe('Voice');
-        expect(tab.sections[0].title).toBe('Voice channel');
-        expect(tab.sections[0].settings[0].helpText).toBe('A voice channel works like an always-open call: members join and leave its call whenever they want, and can still chat in the channel. The Calls app must be enabled.');
-        expect(tab.sections[0].settings[0].options).toEqual([
-            {value: 'on', text: 'Voice channel'},
-            {value: 'off', text: 'Regular channel'},
-        ]);
-
-        expect(tab.shouldRender!(store.getState(), {id: 'dm', type: 'D', delete_at: 0} as Channel)).toBe(false);
-
-        const channel = {id: 'voice', type: 'O', team_id: teamId, delete_at: 0} as Channel;
-        expect(await tab.loadValues!(channel)).toEqual({voice: 'off'});
-        await tab.onSave({voice: 'on'}, channel);
-        expect(client.updateVoiceChannel).toHaveBeenCalledWith('voice', true);
-        plugin.uninitialize?.();
-    });
-
-    test('new voice channel', async () => {
+    test('new voice channel creates through the ordinary channel API, with the Talk preset', async () => {
         const registry = makeRegistry(true);
         const plugin = new Plugin();
         plugin.initialize(registry as unknown as PluginRegistry, makeStore(state));
@@ -157,8 +127,9 @@ describe('Plugin', () => {
         const createChannel = jest.spyOn(Client4, 'createChannel').mockResolvedValue(created as never);
 
         const result = await option.onCreate({teamId, displayName: 'Lounge', url: 'lounge', purpose: '', type: option.id});
-        expect(createChannel).toHaveBeenCalledWith(expect.objectContaining({team_id: teamId, name: 'lounge', display_name: 'Lounge', type: 'O'}));
-        expect(client.updateVoiceChannel).toHaveBeenCalledWith('newchannel', true);
+        expect(createChannel).toHaveBeenCalledWith(expect.objectContaining({
+            team_id: teamId, name: 'lounge', display_name: 'Lounge', type: 'O', props: {am_preset: 'voice_talk'},
+        }));
         expect(result).toEqual({status: 'created', channel: created});
 
         createChannel.mockRejectedValue(new Error('A channel with that name already exists'));

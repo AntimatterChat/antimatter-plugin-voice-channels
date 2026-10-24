@@ -5,22 +5,16 @@ import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
 import type {Channel} from '@mattermost/types/channels';
-import type {GlobalState} from '@mattermost/types/store';
 
 import {Client4} from 'mattermost-redux/client';
-import {Permissions} from 'mattermost-redux/constants';
 import {getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
-import {haveIChannelPermission} from 'mattermost-redux/selectors/entities/roles';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
 import {
     handleSessionDeafened,
-    handleVoiceChannelUpdated,
     loadConfig,
     loadVoiceChannel,
     loadVoiceChannels,
-    logError,
-    setVoiceChannel,
 } from './actions';
 import {startDeafenController, stopDeafenController} from './call_control';
 import VoiceChannelPrivacy, {newVoiceChannelType} from './components/channel_type_option';
@@ -30,27 +24,14 @@ import makeSidebarChannelLabel from './components/sidebar_channel_label';
 import SidebarParticipants from './components/sidebar_participants';
 import VoicePanel from './components/voice_panel/voice_panel';
 import manifest from './manifest';
-import {intlFor} from './intl';
 import {createVoiceChannelsAPI} from './public_api';
 import reducer from './reducer';
-import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel, isVoiceChannel} from './selectors';
+import {isActiveVoiceChannel, isCallsAvailable, isKnownChannel} from './selectors';
 import type {PluginClass, PluginRegistry, PluginStore, WebSocketMessage} from './types/host';
 import {isFusionUI} from './web_ui';
 import {registerTranslations} from './translations';
 
 import './styles.css';
-
-function canManageVoice(state: GlobalState, channel: Channel) {
-    let permission;
-    if (channel.type === 'O') {
-        permission = Permissions.MANAGE_PUBLIC_CHANNEL_PROPERTIES;
-    } else if (channel.type === 'P') {
-        permission = Permissions.MANAGE_PRIVATE_CHANNEL_PROPERTIES;
-    } else {
-        return false;
-    }
-    return channel.delete_at === 0 && haveIChannelPermission(state, channel.team_id, channel.id, permission);
-}
 
 // loadAllVoiceChannels loads the voice channels the user is a member of, and whether the current
 // channel is one (it may be a public channel the user isn't a member of).
@@ -76,7 +57,7 @@ export default class Plugin implements PluginClass {
         this.registerWebSocketEvents(registry, store);
         this.registerSidebar(registry);
         this.registerChannelView(registry, store);
-        this.registerChannelSettings(registry, store);
+        this.registerNewChannelOption(registry);
 
         startDeafenController(store);
         this.unsubscribers.push(stopDeafenController);
@@ -103,7 +84,6 @@ export default class Plugin implements PluginClass {
     }
 
     private registerWebSocketEvents(registry: PluginRegistry, store: PluginStore) {
-        registry.registerWebSocketEventHandler(`custom_${manifest.id}_voice_channel_updated`, (msg) => handleVoiceChannelUpdated(store, msg));
         registry.registerWebSocketEventHandler(`custom_${manifest.id}_session_deafened`, (msg) => handleSessionDeafened(store, msg));
 
         // The user was added to a channel, which may be a voice channel
@@ -156,35 +136,12 @@ export default class Plugin implements PluginClass {
         );
     }
 
-    private registerChannelSettings(registry: PluginRegistry, store: PluginStore) {
-        // The host takes the settings tab's texts as plain strings, in the language of the moment.
-        const {formatMessage} = intlFor(store.getState());
-        registry.registerChannelSettingsTab?.({
-            uiName: formatMessage(messages.settingsTab),
-            icon: 'icon-volume-high',
-            shouldRender: canManageVoice,
-            sections: [{
-                title: formatMessage(messages.settingsSection),
-                settings: [{
-                    name: 'voice',
-                    type: 'radio',
-                    default: 'off',
-                    helpText: formatMessage(messages.settingsHelp),
-                    options: [
-                        {value: 'on', text: formatMessage(messages.settingsOn)},
-                        {value: 'off', text: formatMessage(messages.settingsOff)},
-                    ],
-                }],
-            }],
-            loadValues: async (channel) => {
-                await loadVoiceChannel(store, channel.id);
-                return {voice: isVoiceChannel(store.getState(), channel.id) ? 'on' : 'off'};
-            },
-            onSave: async (values, channel) => {
-                await setVoiceChannel(store, channel.id, values.voice === 'on');
-            },
-        });
-
+    // registerNewChannelOption registers the classic new-channel modal's Voice channel type (Fusion's own
+    // PresetPicker replaces it there: design §4.1). Voice is a native Antimatter channel type now, picked once at
+    // creation and fixed afterwards; there's no longer a settings tab or a `/voice on|off` to turn it on or off
+    // (see ../server/api.go and ../server/command.go), so this is the only place left that makes one, and it does
+    // so through the ordinary channel creation API, with the Talk preset.
+    private registerNewChannelOption(registry: PluginRegistry) {
         registry.registerChannelTypeOption?.({
             label: <FormattedMessage {...messages.newChannelLabel}/>,
             description: <FormattedMessage {...messages.newChannelDescription}/>,
@@ -192,27 +149,24 @@ export default class Plugin implements PluginClass {
             isAvailable: isCallsAvailable,
             extraContent: VoiceChannelPrivacy,
             onCreate: async (form) => {
-                let channel: Channel;
                 try {
-                    channel = await Client4.createChannel({
+                    const channel = await Client4.createChannel({
                         team_id: form.teamId,
                         name: form.url,
                         display_name: form.displayName,
                         purpose: form.purpose,
                         header: '',
                         type: newVoiceChannelType(form),
+
+                        // am_preset "voice_talk" (server/public/model/channel_type.go's ChannelPresetVoiceTalk):
+                        // the server sets up the channel's type and settings from it before this app's
+                        // ChannelHasBeenCreated hook runs.
+                        props: {am_preset: 'voice_talk'},
                     } as Channel);
+                    return {status: 'created', channel};
                 } catch (err) {
                     return {status: 'error', message: (err as Error).message};
                 }
-
-                try {
-                    await setVoiceChannel(store, channel.id, true);
-                } catch (err) {
-                    // The channel exists: open it, it can be made a voice channel from its settings
-                    logError('failed to make the new channel a voice channel', err);
-                }
-                return {status: 'created', channel};
             },
         });
     }

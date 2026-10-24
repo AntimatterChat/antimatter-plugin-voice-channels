@@ -35,24 +35,8 @@ export async function loadVoiceChannel(store: PluginStore, channelId: string) {
     }
 }
 
-// setVoiceChannel makes a channel a voice channel (voice is true) or a regular channel. It
-// throws a client.ClientError when the server refuses.
-export async function setVoiceChannel(store: PluginStore, channelId: string, voice: boolean) {
-    store.dispatch({type: RECEIVED_VOICE_CHANNEL, data: await client.updateVoiceChannel(channelId, voice)});
-}
-
 export function sessionDeafened(channelId: string, sessionId: string, userId: string, deafened: boolean) {
     return {type: SESSION_DEAFENED, data: {channelId, sessionId, userId, deafened}};
-}
-
-export function handleVoiceChannelUpdated(store: PluginStore, msg: WebSocketMessage) {
-    const {channel_id: channelId, team_id: teamId, voice} = msg.data as {channel_id: string; team_id: string; voice: boolean};
-    if (voice) {
-        // Refetch to get the deafened sessions too
-        loadVoiceChannel(store, channelId);
-        return;
-    }
-    store.dispatch({type: RECEIVED_VOICE_CHANNEL, data: {channel_id: channelId, team_id: teamId, voice: false, deafened_sessions: {}}});
 }
 
 export function handleSessionDeafened(store: PluginStore, msg: WebSocketMessage) {
