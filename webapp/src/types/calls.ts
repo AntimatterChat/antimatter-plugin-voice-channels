@@ -26,4 +26,7 @@ export type CallsPluginState = {
     // The call run by this window (recent Calls versions)
     localCall?: {channelID: string; sessionID: string; state: 'connecting' | 'connected'} | null;
     callsConfig?: {EnableVideo?: boolean; AllowScreenSharing?: boolean};
+
+    // Who a moderator deafened in the call of a channel: user ID -> who deafened them (Antimatter's Calls).
+    modDeafened?: {[channelID: string]: {[userID: string]: string}};
 };

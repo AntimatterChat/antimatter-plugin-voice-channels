@@ -13,6 +13,7 @@ import {
     getConfig,
     getCurrentCallChannelId,
     getMySessionId,
+    isModDeafened,
     isSessionDeafened,
     isVoiceChannel,
 } from './selectors';
@@ -113,14 +114,16 @@ export function autoJoinVoiceChannel(store: PluginStore, channelId: string) {
     joinVoiceChannel(store, channelId, false);
 }
 
-// DeafenController deafens the user when their session of the current call is marked deafened:
-// the remote audio tracks of the call are disabled. Deafening also mutes the user; unmuting
-// undeafens. It only works while the call runs in this window (not with the desktop app).
+// DeafenController deafens the user when their session of the current call is marked deafened,
+// or a moderator deafened them: the remote audio tracks of the call are disabled (a moderator's
+// deafen is also enforced by the Calls server, which sends no audio). Deafening also mutes the
+// user; unmuting undeafens (unless a moderator deafened them: they can't unmute then). It only
+// works while the call runs in this window (not with the desktop app).
 export class DeafenController {
     private store: PluginStore;
     private unsubscribe: () => void;
     private client: CallsClient | null = null;
-    private active: {channelId: string; sessionId: string; deafened: boolean; unmuted: boolean} | null = null;
+    private active: {channelId: string; sessionId: string; deafened: boolean; selfDeafened: boolean; unmuted: boolean} | null = null;
     private mutedByDeafen = false;
 
     constructor(store: PluginStore) {
@@ -162,7 +165,7 @@ export class DeafenController {
             const previous = this.active;
             this.active = null;
             this.mutedByDeafen = false;
-            if (previous.deafened) {
+            if (previous.selfDeafened) {
                 this.store.dispatch(sessionDeafened(previous.channelId, previous.sessionId, getCurrentUserId(state), false));
                 client.setSessionDeafened(previous.channelId, previous.sessionId, false).catch((err) => logError('failed to undeafen a past session', err));
             }
@@ -173,10 +176,11 @@ export class DeafenController {
             return;
         }
 
-        const deafened = isSessionDeafened(state, channelId, sessionId);
+        const selfDeafened = isSessionDeafened(state, channelId, sessionId);
+        const deafened = selfDeafened || isModDeafened(state, channelId, getCurrentUserId(state));
         const unmuted = Boolean(callsState(state).sessions?.[channelId]?.[sessionId]?.unmuted);
         const previous = this.active;
-        this.active = {channelId, sessionId, deafened, unmuted};
+        this.active = {channelId, sessionId, deafened, selfDeafened, unmuted};
 
         if (deafened !== (previous?.deafened ?? false)) {
             for (const track of callsClient.getRemoteVoiceTracks()) {
@@ -185,7 +189,7 @@ export class DeafenController {
         }
 
         // Unmuting while deafened undeafens
-        if (deafened && previous?.deafened && unmuted && !previous.unmuted) {
+        if (selfDeafened && previous?.selfDeafened && unmuted && !previous.unmuted) {
             this.mutedByDeafen = false;
             setDeafened(this.store, false);
         }

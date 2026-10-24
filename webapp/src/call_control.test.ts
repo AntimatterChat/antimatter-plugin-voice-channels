@@ -286,6 +286,35 @@ describe('deafen', () => {
         expect(client.setSessionDeafened).toHaveBeenLastCalledWith('voice1', 'mysession', false);
     });
 
+    test('a moderator\'s deafen disables the call audio until lifted, and unmuting doesn\'t lift it', () => {
+        const callsClient = fakeCallsClient('voice1');
+        window.callsClient = callsClient as unknown as CallsClient;
+        const store = makeStore(inCall(false));
+        startDeafenController(store);
+
+        const modDeafened = {voice1: {[currentUserId]: 'mod'}};
+        setCallsState(store, {...callsInCall(false), modDeafened});
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([false, false]);
+        const newTrack = {enabled: true};
+        callsClient.emit('remoteVoiceStream', {getAudioTracks: () => [newTrack]});
+        expect(newTrack.enabled).toBe(false);
+
+        // Their own deafen isn't touched: unmuting (which the server refuses) leaves the moderator's alone.
+        setCallsState(store, {...callsInCall(true), modDeafened});
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([false, false]);
+        expect(client.setSessionDeafened).not.toHaveBeenCalled();
+
+        // Lifted, the audio comes back.
+        setCallsState(store, callsInCall(false));
+        expect(callsClient.tracks.map((t) => t.enabled)).toEqual([true, true]);
+
+        // Ending the call doesn't undeafen a session the user didn't deafen.
+        setCallsState(store, {...callsInCall(false), modDeafened});
+        delete window.callsClient;
+        setCallsState(store, {});
+        expect(client.setSessionDeafened).not.toHaveBeenCalled();
+    });
+
     test('does nothing outside of a call of this window', async () => {
         const store = makeStore(inCall(true));
         startDeafenController(store);

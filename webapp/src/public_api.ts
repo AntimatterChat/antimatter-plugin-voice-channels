@@ -4,6 +4,7 @@
 import type {GlobalState} from '@mattermost/types/store';
 
 import {getChannel} from 'mattermost-redux/selectors/entities/channels';
+import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
 import {loadVoiceChannel} from './actions';
 import {autoJoinVoiceChannel, joinVoiceChannel, leaveCall, setDeafened} from './call_control';
@@ -15,6 +16,7 @@ import {
     getParticipants,
     isActiveVoiceChannel,
     isKnownChannel,
+    isModDeafened,
     isSessionDeafened,
     isVoiceChannel,
     type Participant,
@@ -58,8 +60,10 @@ function getVoiceParticipants(state: GlobalState, channelId: string): VoiceParti
     return result;
 }
 
+// isDeafened tells whether the user is deafened in their call: by themselves, or by a moderator.
 function isDeafened(state: GlobalState): boolean {
-    return isSessionDeafened(state, getCurrentCallChannelId(state), getMySessionId(state));
+    const channelId = getCurrentCallChannelId(state);
+    return isSessionDeafened(state, channelId, getMySessionId(state)) || isModDeafened(state, channelId, getCurrentUserId(state));
 }
 
 function getAutoJoin(state: GlobalState): boolean {

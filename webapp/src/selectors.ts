@@ -77,26 +77,41 @@ export function isSessionDeafened(state: GlobalState, channelId: string, session
     return Boolean(sessionId && pluginState(state)?.deafened[channelId]?.[sessionId]);
 }
 
+const noModDeafened: {[userId: string]: string} = {};
+
+// modDeafenedIn gives who a moderator deafened in the call of a channel (Calls knows): user ID -> who deafened them.
+// They hear nothing and can't unmute until it's lifted; the Calls server sends them no audio.
+export function modDeafenedIn(state: GlobalState, channelId: string): {[userId: string]: string} {
+    return callsState(state).modDeafened?.[channelId] || noModDeafened;
+}
+
+export function isModDeafened(state: GlobalState, channelId: string, userId: string): boolean {
+    return Boolean(channelId && userId) && userId in modDeafenedIn(state, channelId);
+}
+
 type ParticipantsCacheEntry = {
     sessions?: {[sessionID: string]: CallsSessionState};
     screenSharingId?: string;
     deafened?: {[sessionId: string]: string};
+    modDeafened: {[userId: string]: string};
     participants: Participant[];
 };
 
 const participantsCache = new Map<string, ParticipantsCacheEntry>();
 const noParticipants: Participant[] = [];
 
-// getParticipants returns the participants of the call of a channel, in the order they joined.
-// The result only changes when the call changes.
+// getParticipants returns the participants of the call of a channel, in the order they joined: deafened by
+// themselves or by a moderator. The result only changes when the call changes.
 export function getParticipants(state: GlobalState, channelId: string): Participant[] {
     const calls = callsState(state);
     const sessions = calls.sessions?.[channelId];
     const screenSharingId = calls.screenSharingIDs?.[channelId];
     const deafened = pluginState(state)?.deafened[channelId];
+    const modDeafened = modDeafenedIn(state, channelId);
 
     const cached = participantsCache.get(channelId);
-    if (cached && cached.sessions === sessions && cached.screenSharingId === screenSharingId && cached.deafened === deafened) {
+    if (cached && cached.sessions === sessions && cached.screenSharingId === screenSharingId && cached.deafened === deafened &&
+        cached.modDeafened === modDeafened) {
         return cached.participants;
     }
 
@@ -106,7 +121,7 @@ export function getParticipants(state: GlobalState, channelId: string): Particip
             sessionId: session.session_id,
             userId: session.user_id,
             muted: !session.unmuted,
-            deafened: Boolean(deafened?.[session.session_id]),
+            deafened: Boolean(deafened?.[session.session_id]) || session.user_id in modDeafened,
             video: Boolean(session.video),
             screenSharing: screenSharingId === session.session_id,
             speaking: Boolean(session.voice) && session.unmuted,
@@ -114,6 +129,6 @@ export function getParticipants(state: GlobalState, channelId: string): Particip
         }));
     }
 
-    participantsCache.set(channelId, {sessions, screenSharingId, deafened, participants});
+    participantsCache.set(channelId, {sessions, screenSharingId, deafened, modDeafened, participants});
     return participants;
 }

@@ -12,6 +12,7 @@ import {
     isActiveVoiceChannel,
     isCallsAvailable,
     isKnownChannel,
+    isModDeafened,
     isSessionDeafened,
 } from './selectors';
 import type CallsClient from './types/calls_client';
@@ -80,5 +81,22 @@ describe('selectors', () => {
         expect(isSessionDeafened(state, 'channel', 's3')).toBe(true);
         expect(isSessionDeafened(state, 'channel', 's1')).toBe(false);
         expect(isSessionDeafened(state, 'channel', '')).toBe(false);
+    });
+
+    test('participants deafened by a moderator', () => {
+        const calls = {
+            sessions: {channel: {s1: session('s1', 'u1'), s2: session('s2', 'u2')}},
+            modDeafened: {channel: {u2: 'mod'}},
+        };
+        const state = makeState({calls});
+        expect(getParticipants(state, 'channel').map((p) => p.deafened)).toEqual([false, true]);
+        expect(isModDeafened(state, 'channel', 'u2')).toBe(true);
+        expect(isModDeafened(state, 'channel', 'u1')).toBe(false);
+        expect(isModDeafened(state, 'other', 'u2')).toBe(false);
+        expect(isModDeafened(state, 'channel', '')).toBe(false);
+
+        // Lifting it gives a new list.
+        const lifted = makeState({calls: {...calls, modDeafened: {}}});
+        expect(getParticipants(lifted, 'channel').map((p) => p.deafened)).toEqual([false, false]);
     });
 });

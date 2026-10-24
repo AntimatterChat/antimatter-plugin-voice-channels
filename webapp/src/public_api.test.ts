@@ -65,6 +65,10 @@ describe('selectors', () => {
         expect(selectors.isDeafened(stateWith(calls))).toBe(false);
         expect(selectors.isDeafened(stateWith(calls, {s2: currentUserId}))).toBe(true);
         expect(selectors.isDeafened(stateWith({}))).toBe(false);
+
+        // Deafened by a moderator.
+        expect(selectors.isDeafened(stateWith({...calls, modDeafened: {voice: {[currentUserId]: 'mod'}}}))).toBe(true);
+        expect(selectors.isDeafened(stateWith({...calls, modDeafened: {voice: {other: 'mod'}}}))).toBe(false);
     });
 
     test('getAutoJoin follows the configuration', () => {
