@@ -14,8 +14,6 @@ import (
 // WebSocket events sent to the members of a channel. Clients receive them as
 // custom_<plugin id>_<event>.
 const (
-	// wsEventVoiceChannelUpdated is sent when a channel becomes or stops being a voice channel.
-	wsEventVoiceChannelUpdated = "voice_channel_updated"
 	// wsEventSessionDeafened is sent when a participant deafens or undeafens themselves.
 	wsEventSessionDeafened = "session_deafened"
 )
@@ -57,31 +55,14 @@ func statusFor(err error) int {
 	}
 }
 
-// manageVoicePermission returns the permission needed to turn a channel into a voice channel
-// and back, or nil for channels that can't be voice channels.
-func manageVoicePermission(channel *model.Channel) *model.Permission {
-	switch channel.Type {
-	case model.ChannelTypeOpen:
-		return model.PermissionManagePublicChannelProperties
-	case model.ChannelTypePrivate:
-		return model.PermissionManagePrivateChannelProperties
-	default:
-		return nil
-	}
-}
-
-// getVoiceChannelState returns the voice state of the channel.
+// getVoiceChannelState returns the voice state of the channel. Voice comes from the channel's own props (the
+// server's channel type, fixed at creation): this is race-free even for a channel so new that the creation hook
+// (ChannelHasBeenCreated) hasn't mirrored it into the KV store yet.
 func (p *Plugin) getVoiceChannelState(channel *model.Channel) (*VoiceChannelState, error) {
-	state := &VoiceChannelState{ChannelID: channel.Id, TeamID: channel.TeamId, DeafenedSessions: map[string]string{}}
-
-	vc, err := p.store.GetVoiceChannel(channel.Id)
-	if err != nil {
-		return nil, err
-	}
-	if vc == nil {
+	state := &VoiceChannelState{ChannelID: channel.Id, TeamID: channel.TeamId, Voice: isVoiceChannel(channel), DeafenedSessions: map[string]string{}}
+	if !state.Voice {
 		return state, nil
 	}
-	state.Voice = true
 
 	sessions, err := p.store.GetDeafenedSessions(channel.Id, time.Now())
 	if err != nil {
@@ -94,59 +75,10 @@ func (p *Plugin) getVoiceChannelState(channel *model.Channel) (*VoiceChannelStat
 	return state, nil
 }
 
-// setVoiceChannel turns a channel into a voice channel (voice is true) or back into a regular
-// channel, on behalf of the user.
-func (p *Plugin) setVoiceChannel(userID string, channel *model.Channel, voice bool) (*VoiceChannelState, error) {
-	perm := manageVoicePermission(channel)
-	if perm == nil {
-		return nil, newAPIError(http.StatusBadRequest, "only public and private channels can be voice channels")
-	}
-	if channel.DeleteAt != 0 {
-		return nil, newAPIError(http.StatusBadRequest, "archived channels can't be changed")
-	}
-	if !p.API.HasPermissionToChannel(userID, channel.Id, perm) {
-		return nil, newAPIError(http.StatusForbidden, "you don't have permission to change this channel")
-	}
-
-	if voice {
-		// Calls is set up first so that a voice channel always has working calls.
-		if err := p.calls.SetVoiceProps(channel.Id, true, p.getConfiguration().AllowVideo); err != nil {
-			return nil, errors.Wrap(err, "failed to set up calls in the channel")
-		}
-		if err := p.store.SaveVoiceChannel(&VoiceChannel{
-			ChannelID: channel.Id,
-			TeamID:    channel.TeamId,
-			EnabledBy: userID,
-			EnabledAt: time.Now().UnixMilli(),
-		}); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := p.store.DeleteVoiceChannel(channel.Id); err != nil {
-			return nil, err
-		}
-		if err := p.calls.SetVoiceProps(channel.Id, false, false); err != nil {
-			p.API.LogWarn("Failed to reset the calls settings of a former voice channel", "channel_id", channel.Id, "err", err.Error())
-		}
-	}
-
-	p.API.PublishWebSocketEvent(wsEventVoiceChannelUpdated, map[string]any{
-		"channel_id": channel.Id,
-		"team_id":    channel.TeamId,
-		"voice":      voice,
-	}, &model.WebsocketBroadcast{ChannelId: channel.Id})
-
-	return p.getVoiceChannelState(channel)
-}
-
 // setSessionDeafened records whether the user's call session in the voice channel is deafened
 // and tells the channel members.
 func (p *Plugin) setSessionDeafened(userID string, channel *model.Channel, sessionID string, deafened bool) error {
-	vc, err := p.store.GetVoiceChannel(channel.Id)
-	if err != nil {
-		return err
-	}
-	if vc == nil {
+	if !isVoiceChannel(channel) {
 		return newAPIError(http.StatusBadRequest, "not a voice channel")
 	}
 
